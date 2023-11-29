@@ -1,0 +1,34 @@
+﻿openapi: 3.0.0
+info:
+  title: Simple Calc API
+  description: This is a simple Calc API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081
+    description: http url
+paths:
+  /assist:
+    get:
+      summary: Gets assistant
+      description: Gets assistant using openai
+      operationId: assist
+      requestBody:
+        description: Fetch assistant
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/assist'
+      responses:
+        "200":
+          description: 200OK
+        "400":
+          description: "bad request"
+        "500":
+          description: server error
+components:
+  schemas:
+    assist:
+      required: none
+#      required:
+#      type:
+#      properties:
