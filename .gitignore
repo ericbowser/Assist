@@ -34,3 +34,6 @@ yarn-error.log*
 !.env.vault
 
 .env
+.env.previous
+
+.run/*

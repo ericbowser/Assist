@@ -1,34 +1,51 @@
 ﻿openapi: 3.0.0
-info:
-  title: Simple Calc API
-  description: This is a simple Calc API
-  version: 1.0.0
 servers:
-  - url: http://localhost:8081
-    description: http url
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/ericryanbowser/AssistApi/1.0.0
+  - description: SwaggerHub API Auto Mocking
+    url: http://localhost:5001
+info:
+  description: Node.js Assistant API with Vectors
+  version: "1.0.0"
+  title: Node Assist API
+  contact:
+    email: ericryanbowser@gmail.com
+  license:
+    name: MIT
 paths:
   /assist:
     get:
-      summary: Gets assistant
-      description: Gets assistant using openai
+      tags:
+        - developers
+      summary: get assistant
       operationId: assist
-      requestBody:
-        description: Fetch assistant
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/assist'
+      description: Retrieve Assistant
+      parameters:
+        - in: header
+          name: ApiKey
+          description: OpenAI API Key
+          required: true
+          schema:
+            type: string
       responses:
-        "200":
-          description: 200OK
-        "400":
-          description: "bad request"
-        "500":
-          description: server error
+        '200':
+          description: Returns an assistant object / model
+          content:
+            application/json:
+              schema:
+                type: string
+                items:
+                  $ref: '#/components/schemas/Assist'
+        '400':
+          description: ApiKey is not recognized
 components:
   schemas:
-    assist:
-      required: none
-#      required:
-#      type:
-#      properties:
+    Assist:
+      type: string
+      required:
+        - ApiKey
+      properties:
+        id:
+          type: string
+          format: string
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851

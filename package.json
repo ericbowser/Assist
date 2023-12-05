@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "serve": "npm run serve",
     "dev": "nodemon index.js",
     "build": "node build",
@@ -17,14 +18,16 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-router": "^0.0.1",
+    "node-postgres": "^0.6.2",
     "openai": "^4.20.1",
     "pg": "^8.11.3",
+    "pgvector": "^0.1.5",
     "serve": "^14.2.1",
-    "swagger-jsdoc": "^6.2.5",
-    "swagger-ui-express": "^4.5.0",
     "url": "^0.11.3"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "swagger-jsdoc": "^6.2.5",
+    "swagger-ui-express": "^4.5.0"
   }
 }

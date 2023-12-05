@@ -1,5 +1,4 @@
 ﻿const OpenAI = require("openai");
-const {options} = require("pg/lib/defaults");
 const config = require('dotenv').config();
 
 async function getAssist(key) {
@@ -8,9 +7,10 @@ async function getAssist(key) {
 		apiKey: key,
 		organization: "org-8tTqfyzCfx2lAhM8NkNGw2eQ"
 	});
-	console.log(openai.organization)
 	
-	// const response = await openai.beta.assistants.retrieve("asst_wx2OOaLkWdqoNe3mtx8fw9Y8");
+	const response = await openai.beta.assistants.retrieve("asst_wx2OOaLkWdqoNe3mtx8fw9Y8");
+	console.log(response.model);
+	return response.model;
 	// const thread = await openai.beta.threads.create();
 	// console.log(thread)
 	// const message = await openai.beta.threads.messages.create(
@@ -36,7 +36,7 @@ async function getAssist(key) {
 	// 	'thread_31HIpdxe1Z54FL3pczfvDZOH',
 	// );
 	
-	console.log('response', messages.data)
+	// console.log('response', messages.data)
 }
 
 module.exports = getAssist;
