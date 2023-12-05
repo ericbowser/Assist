@@ -1,0 +1,51 @@
+﻿openapi: 3.0.0
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/ericryanbowser/AssistApi/1.0.0
+  - description: SwaggerHub API Auto Mocking
+    url: http://localhost:5001
+info:
+  description: Node.js Assistant API with Vectors
+  version: "1.0.0"
+  title: Node Assist API
+  contact:
+    email: ericryanbowser@gmail.com
+  license:
+    name: MIT
+paths:
+  /assist:
+    get:
+      tags:
+        - developers
+      summary: get assistant
+      operationId: assist
+      description: Retrieve Assistant
+      parameters:
+        - in: header
+          name: ApiKey
+          description: OpenAI API Key
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns an assistant object / model
+          content:
+            application/json:
+              schema:
+                type: string
+                items:
+                  $ref: '#/components/schemas/Assist'
+        '400':
+          description: ApiKey is not recognized
+components:
+  schemas:
+    Assist:
+      type: string
+      required:
+        - ApiKey
+      properties:
+        id:
+          type: string
+          format: string
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851

@@ -24,8 +24,8 @@ yarn-debug.log*
 yarn-error.log*
 
 /public
-.idea
-.vscode
+.idea/*
+.vscode/*
 .docs/.swagger-codegen/
 .env*
 .flaskenv*
