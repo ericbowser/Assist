@@ -1,0 +1,76 @@
+{
+  "openapi" : "3.0.0",
+  "info" : {
+    "title" : "Node Assist API",
+    "description" : "Node.js Assistant API with Vectors",
+    "contact" : {
+      "email" : "ericryanbowser@gmail.com"
+    },
+    "license" : {
+      "name" : "MIT",
+      "url" : ""
+    },
+    "version" : "1.0.0"
+  },
+  "servers" : [ {
+    "url" : "https://virtserver.swaggerhub.com/ericryanbowser/AssistApi/1.0.0",
+    "description" : "SwaggerHub API Auto Mocking"
+  }, {
+    "url" : "http://localhost:5001",
+    "description" : "SwaggerHub API Auto Mocking"
+  } ],
+  "paths" : {
+    "/assist" : {
+      "get" : {
+        "tags" : [ "developers" ],
+        "summary" : "get assistant",
+        "description" : "Retrieve Assistant",
+        "operationId" : "assist",
+        "parameters" : [ {
+          "name" : "ApiKey",
+          "in" : "header",
+          "description" : "OpenAI API Key",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns an assistant object / model",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Assist"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "ApiKey is not recognized"
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Assist" : {
+        "required" : [ "ApiKey" ],
+        "type" : "string",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "string",
+            "example" : "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          }
+        }
+      }
+    }
+  }
+}
