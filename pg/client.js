@@ -9,20 +9,18 @@ const options = {
 	path: env
 };
 const config = dotenv.config(options);
-console.log('config', config);
 
 const connectionString =
 	`postgres://${config.parsed.DB_USER}:${config.parsed.DB_PASSWORD}@${config.parsed.DB_SERVER}:${config.parsed.DB_PORT}/postgres`;
 
-console.log(connectionString);
-
-async function registerVectorType(request) {
+async function registerVectorType() {
 	try {
-		const client = await connect(request);
-		const registerType = await pgvector.registerType();
+		const client = await connect();
+		console.log(client)
+		const registerType = await pgvector.registerType(client);
 		console.log('register:', registerType);
 		console.log(x);
-		//await client.query('CREATE EXTENSION IF NOT EXISTS vector');
+		await client.query('CREATE EXTENSION IF NOT EXISTS vector');
 	}
 	catch(err) {
 		console.log(err);
@@ -30,9 +28,7 @@ async function registerVectorType(request) {
 	}
 }
 
-async function connect(requestOptions) {
-	console.log('connect request', requestOptions);
-	console.log("config in server", config, connectionString);
+async function connect() {
 	let client = null;
 	try {
 		client = new Client({
@@ -40,7 +36,8 @@ async function connect(requestOptions) {
 			ssl: false
 		});
 		
-		await client.connect(requestOptions);
+		const connect = await client.connect();
+		console.log('pg connect', connect);
 		return client;
 	} catch (e) {
 		console.log(e);

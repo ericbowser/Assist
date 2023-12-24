@@ -1,21 +1,87 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const router = express.Router();
-const getAssist = require('./Assistant');
+const {addEmbedding, initialiseAssist, getEmbedding, initializeDatabase} = require('./Assistant');
 const {registerVectorType} =require('./pg/client');
+const {config} = require("dotenv");
 
-router.post("/assist", async (req, res) => {
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
+router.post("/generalAssist", async (req, res) => {
+	
+	let assistant;
+	assistant = await initialiseAssist();
+	if (assistant) {
+		const json = JSON.parse(assistant);
+		return res.status(200).send(json).end();
+	} else {
+		const errorMessage = {
+			error: `Failed to add embedding ${text}`
+		}
+		
+		return res.status(500).send(errorMessage).end();
+	}
+})
+
+router.post("/initializeDatabase", async (req, res) => {
+
+	const db = await initializeDatabase();
+	if (db) {
+		const json = db.toString();
+		return res.status(200).send(db.index()).end();
+	} else {
+		const errorMessage = {
+			error: `Failed to init db`
+		}
+
+		return res.status(500).send(errorMessage).end();
+	}
+})
+
+router.post("/addEmbedding", async (req, res) => {
+	const text = req.body.text;
+
+	let json = {};
+	let addedEmbedding;
+	if (text) {
+		addedEmbedding = await addEmbedding(text);
+	} else {
+		json = {
+			error: `Failed to add embedding ${text}`
+		}	
+		return res.status(500).send(json).end();
+	}
+	
+	if (addedEmbedding) {
+		json = JSON.parse(addedEmbedding);
+	} else {
+		json = {
+			error: `Failed to add embedding ${text}`
+		}
+	}
+
+	return res.status(200).send(json).end();
+})
+
+router.get("/getEmbedding", async (req, res) => {
 	const request = req.body;
-	
-	const assistant = await getAssist(request);
-	console.log(assistant);
-	
-	return res.status(200).send(assistant).end();
+
+	const embedding = await getEmbedding(request);
+	if (embedding) {
+		const parsed = JSON.parse(embedding);
+		return res.status(200).send(parsed).end();
+	} else {
+		const errorMessage = {
+			error: "failed to get embedding"
+		}
+		return  res.status(500).send(errorMessage).end();	
+	}
 })
 
 router.post('/enablePgVector', async (req, res) => {
 	const request = req.body;
-	const result = await registerVectorType(request);
+	const result = await registerVectorType();
+	
 	if (!result) {
 		console.log('failed to register type');
 		
@@ -24,12 +90,7 @@ router.post('/enablePgVector', async (req, res) => {
 		
 	}
 	
-	const response = {
-		Status: 200,
-		Message: "Success"
-	};
-	
-	return req.Status(200).send(response).end();
+	return res.status(200).send(res.json()).end();
 });
 
 module.exports = router;

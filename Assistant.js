@@ -1,16 +1,47 @@
-﻿const OpenAI = require("openai");
+﻿const OpenAI = require('openai')
 const config = require('dotenv').config();
+const {Pinecone} = require('@pinecone-database/pinecone');
 
-async function getAssist(key) {
-	console.log(config);
-	const openai = new OpenAI({
-		apiKey: key,
-		organization: "org-8tTqfyzCfx2lAhM8NkNGw2eQ"
+async function initializeDatabase() {
+	
+	try {
+		const pinecone = new Pinecone({
+			environment: "gcp-starter",
+			apiKey: config.parsed.PINECONE_API_KEY
+		});
+		if (!pinecone) {
+			return { errorMessage: "failed to initialize Pinecone" };
+		}
+		
+		const indexes = await pinecone.listIndexes();
+		indexes.forEach(x => console.log(x));
+		
+		return pinecone;
+	} catch (err) {
+		console.log(err);
+		return err;
+	}
+}
+
+async function initialiseAssist() {
+	
+	const assist = new OpenAI({
+		apiKey: config.parsed.OPENAI_API_KEY,
+		organization: config.parsed.ASSISTANT_ORG
 	});
 	
-	const response = await openai.beta.assistants.retrieve("asst_wx2OOaLkWdqoNe3mtx8fw9Y8");
-	console.log(response.model);
-	return response.model;
+	console.log('open ai initialized object', assist);
+
+	const response = await openai.beta.assistants.retrieve(config.parsed.ASSISTANT_ID);
+
+	if (response) {
+		console.log('returned response model', response.model);
+	}
+
+	return response;
+}
+	
+	
 	// const thread = await openai.beta.threads.create();
 	// console.log(thread)
 	// const message = await openai.beta.threads.messages.create(
@@ -37,6 +68,37 @@ async function getAssist(key) {
 	// );
 	
 	// console.log('response', messages.data)
+// }
+
+async function getEmbedding(text) {
+	console.log(text);
+
+	const textEmbeddingVector= {
+		model: config.parsed.EMBEDDING_MODEL,
+		input: text
+	};
+
+	const embedding = await openai.embeddings.get(textEmbeddingVector);
+	if(embedding) {
+		return embedding;
+	} else {
+		return null;
+	}
+}
+async function addEmbedding(text) {
+	console.log('text to embed', text)
+
+	const embed= {
+		model: config.parsed.EMBEDDING_MODEL,
+		input: text
+	};
+	
+	const embedding = await openai.embeddings.create(embed);
+	if(embedding) {
+		console.debug(embedding);
+	}
+
+	return embedding;
 }
 
-module.exports = getAssist;
+module.exports = {initialiseAssist, addEmbedding, getEmbedding, initializeDatabase};

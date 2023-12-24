@@ -1,7 +1,7 @@
 {
   "name": "node",
   "version": "1.0.0",
-  "description": "",
+  "description": "My Personal Assist",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -10,9 +10,10 @@
     "build": "node build",
     "clean": "rm -R node_modules && npm install"
   },
-  "author": "",
+  "author": "Eric Ryan Bowser - E.R.B.",
   "license": "ISC",
   "dependencies": {
+    "@pinecone-database/pinecone": "^1.1.2",
     "body-parser": "^1.20.2",
     "dotencr": "^1.0.3",
     "dotenv": "^16.3.1",
@@ -23,11 +24,11 @@
     "pg": "^8.11.3",
     "pgvector": "^0.1.5",
     "serve": "^14.2.1",
+    "swagger-jsdoc": "^6.2.5",
+    "swagger-ui-express": "^5.0.0",
     "url": "^0.11.3"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20",
-    "swagger-jsdoc": "^6.2.5",
-    "swagger-ui-express": "^4.5.0"
+    "nodemon": "^2.0.20"
   }
 }
