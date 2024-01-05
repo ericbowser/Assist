@@ -1,42 +1,71 @@
 const express = require('express');
 const router = express.Router();
-const {addEmbedding, initialiseAssist, getEmbedding, initializeDatabase} = require('./Assistant');
-const {registerVectorType} =require('./pg/client');
-const {config} = require("dotenv");
+const {addEmbedding, getEmbedding} = require('./Embeddings');
+const initialiseAssist = require('./client/openAiClient');
+// const askAssist = require('./AskAssist')
+const config = require('dotenv').config();
+const cors = require('cors');
+const { connectLocalPostgres } = require('./pg/client');
 
 router.use(express.json());
+router.use(cors());
 router.use(express.urlencoded({ extended: true }));
 
-router.post("/generalAssist", async (req, res) => {
+router.post("/askAssist", async (req, res) => {
+	const client = await initialiseAssist();
+	const question = req.body.question || null;
+	const instructions = req.body.instructions || '';
+	console.log('body', req.body)
+	console.log('question from body', question)
+	console.log('instructions from body', instructions)
 	
-	let assistant;
-	assistant = await initialiseAssist();
-	if (assistant) {
-		const json = JSON.parse(assistant);
-		return res.status(200).send(json).end();
+	if (!question) {
+		console.log('gets here')
+		return res.status(400).send({Message: `bad request for params ${question}`})
+	}
+	console.log('question asked: ', question);
+	
+	let messageContent = null;
+	if (client) {
+		const response = await client.create({
+			model: config.parsed.OPENAI_API_MODEL,
+			messages: [
+				{
+					"role": "user",
+					"content": question
+				},
+				{
+					"role": "assistant",
+					"content": instructions
+				}
+			],
+			stream: false
+		});
+		const messageContent = response.choices;
+		console.log(response);
+		
+		return res.status(200).send(messageContent).end();
 	} else {
-		const errorMessage = {
-			error: `Failed to add embedding ${text}`
+		const message = {
+			Message: "Client isn't initialized"
 		}
 		
-		return res.status(500).send(errorMessage).end();
+		return res.status(500).send(message).end();
 	}
 })
 
-router.post("/initializeDatabase", async (req, res) => {
+router.post("/save", async (req, res) => {
+	const text = req.body.text;
 
-	const db = await initializeDatabase();
-	if (db) {
-		const json = db.toString();
-		return res.status(200).send(db.index()).end();
-	} else {
-		const errorMessage = {
-			error: `Failed to init db`
-		}
-
-		return res.status(500).send(errorMessage).end();
-	}
+	if (text) {
+		const connection = await connectLocalPostgres();
+		const query = "INSERT INTO assist."
+		const save = connection.q
+	} 
+	
+	return res.status(200).send(json).end();
 })
+
 
 router.post("/addEmbedding", async (req, res) => {
 	const text = req.body.text;
@@ -77,20 +106,5 @@ router.get("/getEmbedding", async (req, res) => {
 		return  res.status(500).send(errorMessage).end();	
 	}
 })
-
-router.post('/enablePgVector', async (req, res) => {
-	const request = req.body;
-	const result = await registerVectorType();
-	
-	if (!result) {
-		console.log('failed to register type');
-		
-	} else {
-		console.log('result', result);
-		
-	}
-	
-	return res.status(200).send(res.json()).end();
-});
 
 module.exports = router;
