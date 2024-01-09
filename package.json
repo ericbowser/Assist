@@ -7,7 +7,7 @@
     "start": "node index.js",
     "serve": "npm run serve",
     "dev": "nodemon index.js",
-    "build": "node build",
+    "build": "node server.js",
     "clean": "rm -R node_modules && rm package-lock.json && npm install"
   },
   "author": "Eric Ryan Bowser - E.R.B.",

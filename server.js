@@ -5,11 +5,11 @@ const initialiseAssist = require('./client/openAiClient');
 // const askAssist = require('./AskAssist')
 const config = require('dotenv').config();
 const cors = require('cors');
-const { connectLocalPostgres } = require('./pg/client');
+const {connectLocalPostgres} = require('./pg/client');
 
 router.use(express.json());
 router.use(cors());
-router.use(express.urlencoded({ extended: true }));
+router.use(express.urlencoded({extended: true}));
 
 router.post("/askAssist", async (req, res) => {
 	const client = await initialiseAssist();
@@ -18,13 +18,13 @@ router.post("/askAssist", async (req, res) => {
 	console.log('body', req.body)
 	console.log('question from body', question)
 	console.log('instructions from body', instructions)
-	
+
 	if (!question) {
 		console.log('gets here')
 		return res.status(400).send({Message: `bad request for params ${question}`})
 	}
 	console.log('question asked: ', question);
-	
+
 	let messageContent = null;
 	if (client) {
 		const response = await client.create({
@@ -41,29 +41,44 @@ router.post("/askAssist", async (req, res) => {
 			],
 			stream: false
 		});
-		const messageContent = response.choices;
+		const messageContent = response;
 		console.log(response);
-		
+
 		return res.status(200).send(messageContent).end();
 	} else {
 		const message = {
 			Message: "Client isn't initialized"
 		}
-		
+
 		return res.status(500).send(message).end();
 	}
 })
 
 router.post("/save", async (req, res) => {
-	const text = req.body.text;
+	const message = req.body;
+	try {
+		if (message) {
+			const content = message.content;
+			const timeStamp = message.timestamp;
+			const threadId = message.threadId;
+			const connection = await connectLocalPostgres();
+			const query =
+				`INSERT INTO public.messages(content, timestamp, thread_id) VALUES ('${content}', '${timeStamp}', '${threadId}')`;
 
-	if (text) {
-		const connection = await connectLocalPostgres();
-		const query = "INSERT INTO assist."
-		const save = connection.q
-	} 
-	
-	return res.status(200).send(json).end();
+			const save = await connection.query(query);
+			console.log(save.rowCount);
+			const rowcount = {
+				"row count": save.rowCount
+			};
+			return res.status(200).send(rowcount).end();
+		} else {
+			return res.status(400).send().end();
+		}
+		
+	} catch(err) {
+		console.log(err);
+		return res.status(500).send(err.message).end();
+	}
 })
 
 
@@ -77,10 +92,10 @@ router.post("/addEmbedding", async (req, res) => {
 	} else {
 		json = {
 			error: `Failed to add embedding ${text}`
-		}	
+		}
 		return res.status(500).send(json).end();
 	}
-	
+
 	if (addedEmbedding) {
 		json = JSON.parse(addedEmbedding);
 	} else {
@@ -103,7 +118,7 @@ router.get("/getEmbedding", async (req, res) => {
 		const errorMessage = {
 			error: "failed to get embedding"
 		}
-		return  res.status(500).send(errorMessage).end();	
+		return res.status(500).send(errorMessage).end();
 	}
 })
 

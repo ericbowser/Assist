@@ -1,5 +1,5 @@
 ﻿const {Client} = require('pg');
-const dotenv = require("dotenv");
+const config = require("dotenv").config();
 const path = require('path');
 const Pinecone = require("@pinecone-database/pinecone");
 
@@ -8,7 +8,6 @@ const env = path.resolve(__dirname, '.env');
 const options = {
 	path: env
 };
-const config = dotenv.config(options);
 
 const connectionString =
 	`postgres://${config.parsed.DB_USER}:${config.parsed.DB_PASSWORD}@${config.parsed.DB_SERVER}:${config.parsed.DB_PORT}/postgres`;
@@ -21,8 +20,7 @@ async function connectLocalPostgres() {
 			ssl: false
 		});
 
-		const connect = await client.connect();
-		console.log('pg connect', connect);
+		await client.connect();
 		return client;
 	} catch (e) {
 		console.log(e);
