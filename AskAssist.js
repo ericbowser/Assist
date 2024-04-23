@@ -1,11 +1,13 @@
 ﻿const openAiClient = require('./client/openAiClient')
 
-async function askAssist() {
+async function askAssist(question) {
     try {
+        console.log('client');
         if(openAiClient) {
-           const completion = openAiClient.completions.create({
-               
-           })
+           const completion = openAiClient.create({
+               Message: question
+           });
+           return completion;
         } else {
             const errorMessage = {
                 Message: 'Failed to ask assistant'
@@ -13,7 +15,6 @@ async function askAssist() {
             console.log(errorMessage);
             return errorMessage;
         }
-        const assistant = openAiClient
     } catch(err) {
         console.log('error asking assistant with error: ', err);
         return err;

@@ -16,6 +16,7 @@ function initialiseAssist() {
                 return {Message: 'Failed to retrieve api object'};
             }
         } else {
+            console.log('returns just client')
             return openAiClient;
         }
     }
