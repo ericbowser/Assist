@@ -4,8 +4,8 @@ const { Spot } = require('@binance/connector')
 
 
 const keys = {
-    apiKey: 'uLAS2pF0mI2LhAaGEvAhS9rvjOpi1Gzv2sJX1kNRyiJBrTMdOuHvKKLU6MYOFNw7',
-    secretKey: 'iIUVQPWElnY5Fcu1lfQXAqFdzP2g83P1LzPcuGG6bS1MWk1378byxg2n3lxc6izx',
+    apiKey: process.env.BINANCE_TEST_API_KEY,
+    secretKey: process.env.BINANCE_TEST_API_SECRET_KEY
 }
 
 // Get account information
