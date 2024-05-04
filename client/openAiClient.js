@@ -2,8 +2,7 @@
 const config = require('dotenv').config();
 
 let openAiClient = null;
-function initialiseAssist() {
-
+function initialiseAssist(){
     try {
         if (!openAiClient) {
             const openAiApi = new OpenAI({
@@ -11,12 +10,13 @@ function initialiseAssist() {
                 organization: config.parsed.ASSISTANT_ORG
             });
             if (openAiApi) {
-                return openAiApi.chat.completions;
+                openAiClient = openAiApi.chat.completions;
+                return openAiClient;
             } else {
                 return {Message: 'Failed to retrieve api object'};
             }
         } else {
-            console.log('returns just client')
+            console.log('client already initialized so just returning the one');
             return openAiClient;
         }
     }
