@@ -9,10 +9,8 @@ const options = {
 	path: env
 };
 
-/*
 const connectionString =
 	`postgres://${config.parsed.DB_USER}:${config.parsed.DB_PASSWORD}@${config.parsed.DB_SERVER}:${config.parsed.DB_PORT}/postgres`;
-*/
 
 async function connectLocalPostgres() {
 	let client = null;
@@ -50,4 +48,4 @@ async function initializePinecone() {
 	}
 }
 
-module.exports = {connectLocalPostgres, initializePinecone};
+module.exports = {connectLocalPostgres};

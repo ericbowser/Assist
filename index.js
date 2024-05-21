@@ -8,7 +8,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const express = require("express");
 const {serve, setup} = require("swagger-ui-express");
 
-const httpPort =  3001;
+const httpPort =  process.env.PORT || 3003;
 console.log('passed port to use for http', httpPort);
 
 const app = express();

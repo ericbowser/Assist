@@ -53,12 +53,12 @@ router.post("/askAssist", async (req, res) => {
                 ],
                 stream: false
             }
-
+            
             const response = await client.create(body);
             console.log(response);
             if (response) {
-                console.log('success response', response.choices[0]);
-                return res.status(200).send(response.choices[0])
+                console.log('success response', response);
+                return res.status(200).send(response)
             } else {
                 console.error('Failed to get response', response);
                 return res.status(500).send(response);
@@ -79,17 +79,15 @@ router.post("/askAssist", async (req, res) => {
 })
 
 router.post("/save", async (req, res) => {
-    const message = req.body;
-    console.log('Message body', message);
+    const { thread, question, answer } = req.body;
+    console.log('Message body: ', answer);
+    console.log('Thread: ', thread);
+    console.log('Question: ', question);
     try {
-        if (message) {
-            const content = message.content;
-            const timeStamp = message.timestamp;
-            const threadId = message.threadId;
+        if (answer && question) {
             const connection = await connectLocalPostgres();
             const query =
-                `INSERT INTO public.messages(content, timestamp, thread_id)
-                 VALUES ('${content}', '${timeStamp}', '${threadId}')`;
+                `INSERT INTO public.messages(answer, thread, question) VALUES (${answer}, ${thread}, ${question})`;
 
             const save = await connection.query(query);
             console.log(save.rowCount);
@@ -107,6 +105,33 @@ router.post("/save", async (req, res) => {
     }
 })
 
+router.post('/generate-image', async (req, res) => {
+    const { prompt } = req.body;
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+
+    try {
+        const response = await axios.post(
+            'https://api.openai.com/v1/images/generations',
+            {
+                prompt,
+                n: 1,
+                size: '1024x1024'
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${openaiApiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const imageUrl = response.data.data[0].url;
+        res.json({ imageUrl });
+    } catch (error) {
+        console.error('Error generating image:', error);
+        res.status(500).send('Error generating image');
+    }
+});
 
 router.post("/addEmbedding", async (req, res) => {
     const text = req.body.text;
