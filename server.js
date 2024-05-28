@@ -53,7 +53,7 @@ router.post("/askAssist", async (req, res) => {
                 ],
                 stream: false
             }
-            
+
             const response = await client.create(body);
             console.log(response);
             if (response) {
@@ -79,7 +79,7 @@ router.post("/askAssist", async (req, res) => {
 })
 
 router.post("/save", async (req, res) => {
-    const { thread, question, answer } = req.body;
+    const {thread, question, answer} = req.body;
     console.log('Message body: ', answer);
     console.log('Thread: ', thread);
     console.log('Question: ', question);
@@ -87,7 +87,8 @@ router.post("/save", async (req, res) => {
         if (answer && question) {
             const connection = await connectLocalPostgres();
             const query =
-                `INSERT INTO public.messages(answer, thread, question) VALUES (${answer}, ${thread}, ${question})`;
+                `INSERT INTO public.messages(answer, thread, question)
+                 VALUES (${answer}, ${thread}, ${question})`;
 
             const save = await connection.query(query);
             console.log(save.rowCount);
@@ -105,8 +106,41 @@ router.post("/save", async (req, res) => {
     }
 })
 
+router.post("/fetchImageUrls", async (req, res) => {
+    try {
+        const {imageUrl, prompt} = req.body;
+        if (!imageUrl) {
+            return res.status(400).send({error: 'bad request'}).end();
+        }
+        const connection = await connectLocalPostgres();
+        const sql = 'SELECT imageurl FROM public.images';
+        const response = await connection.query(sql);
+
+        return res.status(200).send(response).end();
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send(err.message).end();
+    }
+})
+router.post("/saveImageUrl", async (req, res) => {
+    try {
+        const {imageUrl, prompt} = req.body;
+        if (!imageUrl) {
+            return res.status(400).send({error: 'bad request'}).end();
+        }
+        const connection = await connectLocalPostgres();
+        const sql = `INSERT INTO public.images(imageurl, prompt) VALUES ('${imageUrl}', '${prompt}')`;
+        const response = await connection.query(sql);
+        
+        return res.status(200).send(response).end();
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send(err.message).end();
+    }
+})
+
 router.post('/generate-image', async (req, res) => {
-    const { prompt } = req.body;
+    const {prompt} = req.body;
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
     try {
@@ -126,7 +160,7 @@ router.post('/generate-image', async (req, res) => {
         );
 
         const imageUrl = response.data.data[0].url;
-        res.json({ imageUrl });
+        res.json({imageUrl});
     } catch (error) {
         console.error('Error generating image:', error);
         res.status(500).send('Error generating image');
