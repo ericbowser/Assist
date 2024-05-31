@@ -7,6 +7,15 @@ const config = require('dotenv').config();
 const cors = require('cors');
 const {connectLocalPostgres} = require('./pg/client');
 const {getAccount} = require('./api/binanceSpotApi');
+const axios = require('axios');
+const Alpaca = require('@alpacahq/alpaca-trade-api');
+const {getDataV2} = require("@alpacahq/alpaca-trade-api/dist/resources/datav2/rest_v2");
+
+const alpaca = new Alpaca({
+    keyId: process.env.ALPACA_API_KEY,
+    secretKey: process.env.ALPACA_SECRET_KEY,
+    paper: true,
+})
 
 router.use(express.json());
 router.use(cors());
@@ -19,6 +28,15 @@ router.get("/getBinanceAssets", async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).send(err).end();
+    }
+});
+
+router.get("/getTransactions", async (req, res) => {
+    try {
+        const response = await axios.post(process.env.ALPACA_BASE_URL2);
+        return res.status(200).send(response.data).end();
+    } catch (err) {
+        console.error(err);
     }
 });
 
@@ -37,7 +55,6 @@ router.post("/askAssist", async (req, res) => {
             return res.status(400).send({Message: `bad request for params ${question}`})
         }
 
-        let messageContent = null;
         if (client) {
             const body = {
                 model: config.parsed.OPENAI_API_MODEL,
@@ -71,12 +88,11 @@ router.post("/askAssist", async (req, res) => {
 
             return res.status(500).send(message).end();
         }
-
     } catch (err) {
         console.error(err);
         return res.status(500).send(err).end();
     }
-})
+});
 
 router.post("/save", async (req, res) => {
     const {thread, question, answer} = req.body;
@@ -113,7 +129,7 @@ router.post("/fetchImageUrls", async (req, res) => {
             return res.status(400).send({error: 'bad request'}).end();
         }
         const connection = await connectLocalPostgres();
-        const sql = 'SELECT imageurl FROM public.images';
+        const sql = 'SELECT imageurl FROM public.images;';
         const response = await connection.query(sql);
 
         return res.status(200).send(response).end();
@@ -129,9 +145,10 @@ router.post("/saveImageUrl", async (req, res) => {
             return res.status(400).send({error: 'bad request'}).end();
         }
         const connection = await connectLocalPostgres();
-        const sql = `INSERT INTO public.images(imageurl, prompt) VALUES ('${imageUrl}', '${prompt}')`;
+        const sql = `INSERT INTO public.images(imageurl, prompt)
+                     VALUES ('${imageUrl}', '${prompt}')`;
         const response = await connection.query(sql);
-        
+
         return res.status(200).send(response).end();
     } catch (err) {
         console.log(err);
@@ -195,7 +212,7 @@ router.post("/addEmbedding", async (req, res) => {
 router.get("/getEmbedding", async (req, res) => {
     const request = req.body;
 
-    const embedding = await getEmbedding(request);
+    const embedding= await getEmbedding(request);
     if (embedding) {
         const parsed = JSON.parse(embedding);
         return res.status(200).send(parsed).end();
