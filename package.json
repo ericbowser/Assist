@@ -22,6 +22,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-router": "^0.0.1",
+    "node-mailer": "^0.1.1",
     "node-postgres": "^0.6.2",
     "openai": "^4.20.1",
     "pg": "^8.11.3",

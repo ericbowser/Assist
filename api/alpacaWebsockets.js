@@ -1,4 +1,5 @@
-﻿const websocket = alpaca.data_stream_v2;
+﻿/*
+const websocket = alpaca.data_stream_v2;
 websocket.onConnect(() => {
     websocket.subscribeForTrades(["AAPL"]);
 });
@@ -11,4 +12,4 @@ websocket.onError((err) => {
 websocket.onStockTrade((trade) => {
     console.log("Trade:", trade);
 });
-websocket.connect();
+websocket.connect();*/

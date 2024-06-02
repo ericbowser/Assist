@@ -9,11 +9,14 @@ const {connectLocalPostgres} = require('./pg/client');
 const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
 const Alpaca = require('@alpacahq/alpaca-trade-api');
+const {mailer} = require('node-mailer');
+/*
 const {getDataV2} = require("@alpacahq/alpaca-trade-api/dist/resources/datav2/rest_v2");
+*/
 
 const alpaca = new Alpaca({
     keyId: process.env.ALPACA_API_KEY,
-    secretKey: process.env.ALPACA_SECRET_KEY,
+    secretKey: process.env.ALPACA_API_SECRET,
     paper: true,
 })
 
@@ -223,5 +226,43 @@ router.get("/getEmbedding", async (req, res) => {
         return res.status(500).send(errorMessage).end();
     }
 })
+
+router.post('/sendEmail', async (req, res) => {
+    const { to, subject, text } = req.body;
+
+    try {
+        let configOptions = {
+            host: "smtp.gmail.com",
+            port: 587,
+            tls: {
+                rejectUnauthorized: true,
+                minVersion: "TLSv1.2"
+            }
+        }
+        // Create a transporter object
+        const transporter = await mailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'ericryanbowser@@gmail.com',
+                pass: '' // It's better to use environment variables
+            }
+        });
+
+        // Send mail with defined transport object
+        const info = await transporter.sendMail({
+            from: 'your-email@gmail.com',
+            to: to,
+            subject: subject,
+            text: text,
+        });
+
+        console.log('Message sent: %s', info.messageId);
+
+        res.status(200).json({ message: 'Email sent successfully!' });
+    } catch (error) {
+        console.error('Error sending email:', error);
+        res.status(500).json({ message: 'Failed to send email.' });
+    }
+});
 
 module.exports = router;

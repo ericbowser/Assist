@@ -8,14 +8,14 @@
 
 const Alpaca = require("@alpacahq/alpaca-trade-api");
 const API_KEY = process.env.ALPACA_API_KEY;
-const API_SECRET = process.env.ALPACA_SECRET_KEY;
+const API_SECRET = process.env.ALPACA_API_SECRET;
 
 const RestApi = () => {
     const options = {method: 'GET', headers: {accept: 'application/json'}};
     const start = '2024-04-29';
     const end = '2024-03-29';
     const symbols = ['BTC', 'ETH', 'SOL'].join('&');
-    const fullUrl = `${process.env.ALPACA_BASE_URL}&${start}&${end}}` + symbols;
+    const fullUrl = `${process.env.ALPACA_PAPER_URL}&${start}&${end}}` + symbols;
     
     fetch(process.env.ALPACA_BASE_URL, options)
         .then(response => response.json())
