@@ -240,6 +240,7 @@ router.post('/sendEmail', async (req, res) => {
             }
         }
         // Create a transporter object
+/*
         const transporter = await mailer.createTransport({
             service: 'gmail',
             auth: {
@@ -247,14 +248,17 @@ router.post('/sendEmail', async (req, res) => {
                 pass: '' // It's better to use environment variables
             }
         });
+*/
 
         // Send mail with defined transport object
+/*
         const info = await transporter.sendMail({
             from: 'your-email@gmail.com',
             to: to,
             subject: subject,
             text: text,
         });
+*/
 
         console.log('Message sent: %s', info.messageId);
 
