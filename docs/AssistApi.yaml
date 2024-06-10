@@ -3,7 +3,7 @@ servers:
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/ericryanbowser/AssistApi/1.0.0
   - description: HTTPs
-    url: https://localhost:5002
+    url: https://localhost:3001
 info:
   description: Node.js Assistant API with Vectors
   version: "1.0.0"
@@ -13,32 +13,24 @@ info:
   license:
     name: MIT
 paths:
-  /generalAssist:
+  /askAssist:
     post:
-      summary: get assistant
+      summary: Text Question
       operationId: assist
-      description: Retrieve Assistant
+      description: Ask assistant a question
       responses:
         '200':
-          description: Returns an assistant object / model
+          description: Returns an answer
           content:
             application/json:
               schema:
-                type: string
+                type: object
         '400':
-          description: ApiKey is not recognized
-  /enablePgVector:
-    post:
-      summary: enable pgvector type
-      operationId: enablePgvector
-      description: enable pgvector type for postgreSQL database
-      parameters: []
-      responses:
-        '200':
-          description: creates type effectively 
-          content: 
-            application/json:
-              schema:
-                type: string
-        '400':
-          description: ApiKey is not recognized
+          description: bad request
+      parameters:
+        - name: content
+          in: query
+          description: Question to ask
+          required: true
+          schema:
+            type: string
