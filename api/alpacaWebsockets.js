@@ -7,7 +7,8 @@ console.log('Alpaca Sandbox URL: ', process.env.ALPACA_WEB_SOCKET_SANDBOX_URL);
 
 const webSockeyApiKey = process.env.ALPACA_PAPER_API_KEY;
 const secret = process.env.ALPACA_PAPER_API_SECRET;
-const baseUrl = process.env.ALPACA_WEB_SOCKET_URL;
+const baseUrl = process.env.ALPACA_WEB_SOCKET_SANDBOX_URL;
+console.log(baseUrl)
 
 // Create a new WebSocket client
 const ws = new WebSocket(baseUrl);
@@ -56,3 +57,5 @@ ws.on('close', function close() {
 ws.on('error', function error(err) {
     console.error('WebSocket error: ', err);
 });
+
+module.exports = {authenticate, ws};

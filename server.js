@@ -8,18 +8,22 @@ const cors = require('cors');
 const {connectLocalPostgres} = require('./pg/client');
 const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
-const Alpaca = require('@alpacahq/alpaca-trade-api');
-const {mailer} = require('node-mailer');
 /*
-const {getDataV2} = require("@alpacahq/alpaca-trade-api/dist/resources/datav2/rest_v2");
+const Alpaca = require('@alpacahq/alpaca-trade-api');
 */
+const {mailer} = require('node-mailer');
 
-const alpaca = new Alpaca({
+// Web Sockets
+const {authenticate, ws} = require('./api/alpacaWebsockets');
+// REST
+/*const alpaca = new Alpaca({
     keyId: process.env.ALPACA_PAPER_API_KEY,
     secretKey: process.env.ALPACA_PAPER_API_SECRET,
     paper: true,
-})
-
+})*/
+/*
+authenticate();
+*/
 router.use(express.json());
 router.use(cors());
 router.use(express.urlencoded({extended: true}));
