@@ -27,8 +27,13 @@ const {authenticate, ws} = require('./api/alpacaWebsockets');
 /*
 authenticate();
 */
+const corsOptions = {
+    origin: ['https://erb-think.com', 'http://localhost:3003' ],
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
+
+router.use(cors(corsOptions));
 router.use(express.json());
-router.use(cors());
 router.use(express.urlencoded({extended: true}));
 
 router.get("/getBinanceAssets", async (req, res) => {
