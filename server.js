@@ -12,6 +12,7 @@ const axios = require('axios');
 const Alpaca = require('@alpacahq/alpaca-trade-api');
 */
 const sendEmailWithAttachment = require('./api/gmailSender');
+const {HttpStatusCode} = require("axios");
 
 // Web Sockets
 /*
@@ -234,13 +235,17 @@ router.get("/getEmbedding", async (req, res) => {
 })
 
 router.post('/sendEmail', async (req, res) => {
-    const { from, to, subject, message } = req.body;
+    const { from, subject, message } = req.body;
     
     try {
         // Send mail with defined transport object
-        const sent = await sendEmailWithAttachment(from, to, subject, message)
-
-        res.status(200).send(sent).end();
+        const sent = await sendEmailWithAttachment(from, subject, message)
+        console.log(sent)
+        if (sent.accepted.length > 0) {
+            res.status(200).send('Email Sent!').end();
+        } else {
+            res.status(500).send('Error').end();
+        }
     } catch (error) {
         console.error('Error sending email:', error);
         res.status(500).json({ message: 'Failed to send email.' });
