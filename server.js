@@ -11,10 +11,12 @@ const axios = require('axios');
 /*
 const Alpaca = require('@alpacahq/alpaca-trade-api');
 */
-const {mailer} = require('node-mailer');
+const sendEmailWithAttachment = require('./api/gmailSender');
 
 // Web Sockets
+/*
 const {authenticate, ws} = require('./api/alpacaWebsockets');
+*/
 // REST
 /*const alpaca = new Alpaca({
     keyId: process.env.ALPACA_PAPER_API_KEY,
@@ -232,41 +234,13 @@ router.get("/getEmbedding", async (req, res) => {
 })
 
 router.post('/sendEmail', async (req, res) => {
-    const { to, subject, text } = req.body;
-
+    const { from, to, subject, message } = req.body;
+    
     try {
-        let configOptions = {
-            host: "smtp.gmail.com",
-            port: 587,
-            tls: {
-                rejectUnauthorized: true,
-                minVersion: "TLSv1.2"
-            }
-        }
-        // Create a transporter object
-/*
-        const transporter = await mailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: 'ericryanbowser@@gmail.com',
-                pass: '' // It's better to use environment variables
-            }
-        });
-*/
-
         // Send mail with defined transport object
-/*
-        const info = await transporter.sendMail({
-            from: 'your-email@gmail.com',
-            to: to,
-            subject: subject,
-            text: text,
-        });
-*/
+        const sent = await sendEmailWithAttachment(from, to, subject, message)
 
-        console.log('Message sent: %s', info.messageId);
-
-        res.status(200).json({ message: 'Email sent successfully!' });
+        res.status(200).send(sent).end();
     } catch (error) {
         console.error('Error sending email:', error);
         res.status(500).json({ message: 'Failed to send email.' });

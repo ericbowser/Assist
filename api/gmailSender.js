@@ -1,24 +1,24 @@
-﻿import { GmailMailer } from 'gmail-node-mailer';
+﻿const nodemailer = require('nodemailer');
+const config = require('dotenv').config();
 
-async function sendEmailWithAttachment() {
-    const mailer = new GmailMailer();
-    await mailer.initializeClient({
-        gmailSenderEmail:'ericryanbowser@gmail.com',
-/*
-        gmailServiceAccountPath: './path/to/your-service-account.json',
-*/
+async function sendEmailWithAttachment(from, to, subject, message) {
+    const transporter = await nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        auth: {
+            user: 'ericryanbowser@gmail.com',
+            pass: config.parsed.GMAIL_APP_PASSWORD,
+        },
     });
-   /* const attachments = [{
-        filename: 'Invoice.pdf',
-        mimeType: 'application/pdf',
-        content: 'base64_encoded_content_here'
-    }];*/
-
-    await mailer.sendEmail({
-        recipientEmail: 'customer@example.com',
-        subject: 'Your Invoice',
-        message: 'Please find attached your invoice.',
+    const info = await transporter.sendMail({
+        from: from,
+        to: to,
+        subject: subject,
+        text: message,
+        html: `<p>${message}</p>` 
     });
+    console.log("Message sent: %s", info.messageId);
+    return info;
 }
 
-
+module.exports = sendEmailWithAttachment;
