@@ -39,3 +39,4 @@ pg/UserTable.sql
 .env.previous
 
 .run/*
+/assist.log

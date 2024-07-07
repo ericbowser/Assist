@@ -15,10 +15,10 @@ async function sendEmailWithAttachment(from, subject, message) {
         to: 'ericryanbowser@gmail.com',
         subject: subject,
         text: message,
-        html: `<p>${message}</p>` 
+        html: `<p>${message}</p>`
     });
     console.log("Message sent: %s", info.messageId);
-    return info;
+    return info.messageId;
 }
 
 module.exports = sendEmailWithAttachment;

@@ -2,41 +2,20 @@ const express = require('express');
 const router = express.Router();
 const {addEmbedding, getEmbedding} = require('./Embeddings');
 const initialiseAssist = require('./client/openAiClient');
-const {askAssist} = require('./AskAssist')
 const config = require('dotenv').config();
 const cors = require('cors');
 const {connectLocalPostgres} = require('./pg/client');
 const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
-/*
-const Alpaca = require('@alpacahq/alpaca-trade-api');
-*/
 const sendEmailWithAttachment = require('./api/gmailSender');
-const {HttpStatusCode} = require("axios");
+const getLogger = require('./assistLog');
 
-// Web Sockets
-/*
-const {authenticate, ws} = require('./api/alpacaWebsockets');
-*/
-// REST
-/*const alpaca = new Alpaca({
-    keyId: process.env.ALPACA_PAPER_API_KEY,
-    secretKey: process.env.ALPACA_PAPER_API_SECRET,
-    paper: true,
-})*/
-/*
-authenticate();
-*/
-/*
-const corsOptions = {
-    origin: 'http://localhost:3003',
-    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
-};
-
-*/
 router.use(cors());
 router.use(express.json());
 router.use(express.urlencoded({extended: true}));
+
+let _logger = getLogger();
+_logger.info("Logger Initialized")
 
 router.get("/getBinanceAssets", async (req, res) => {
     try {
@@ -56,7 +35,6 @@ router.get("/getTransactions", async (req, res) => {
         console.error(err);
     }
 });
-
 router.post("/askAssist", async (req, res) => {
     try {
         if (!req.body) {
@@ -64,9 +42,13 @@ router.post("/askAssist", async (req, res) => {
         }
 
         const client = await initialiseAssist();
+        _logger.info("Received Assist client: ", {client})
 
         const question = req?.body?.content || null;
         const instructions = req?.body?.instructions || null;
+
+        const cleanText = question.replace(/[\n']/g, '');
+        _logger.info("Ask assist message exists from request body", {body: cleanText});
 
         if (!question) {
             return res.status(400).send({Message: `bad request for params ${question}`})
@@ -88,25 +70,25 @@ router.post("/askAssist", async (req, res) => {
                 stream: false
             }
 
+            _logger.info("sending Assist message for model: ", {model: body.model})
             const response = await client.create(body);
-            console.log(response);
             if (response) {
-                console.log('success response', response);
+                _logger.info('success response', {response});
                 return res.status(200).send(response)
             } else {
-                console.error('Failed to get response', response);
+                _logger.error('Failed to get response', response);
                 return res.status(500).send(response);
             }
         } else {
-            console.log('not initialized')
             const message = {
                 Message: "Client isn't initialized"
             }
+            _logger.info('not initialized', {message})
 
             return res.status(500).send(message).end();
         }
     } catch (err) {
-        console.error(err);
+        _logger.error("Failed with error: ", {err});
         return res.status(500).send(err).end();
     }
 });
@@ -229,7 +211,7 @@ router.post("/addEmbedding", async (req, res) => {
 router.get("/getEmbedding", async (req, res) => {
     const request = req.body;
 
-    const embedding= await getEmbedding(request);
+    const embedding = await getEmbedding(request);
     if (embedding) {
         const parsed = JSON.parse(embedding);
         return res.status(200).send(parsed).end();
@@ -242,20 +224,20 @@ router.get("/getEmbedding", async (req, res) => {
 })
 
 router.post('/sendEmail', async (req, res) => {
-    const { from, subject, message } = req.body;
-    
+    const {from, subject, message} = req.body;
+
     try {
-        // Send mail with defined transport object
-        const sent = await sendEmailWithAttachment(from, subject, message)
-        console.log(sent)
-        if (sent.accepted.length > 0) {
+        _logger.info("Sending email: ", {from, subject, message})
+        const messageId = await sendEmailWithAttachment(from, subject, message)
+        _logger.info("Email sent with message id: ", {messageId})
+        if (messageId) {
             res.status(200).send('Email Sent!').end();
         } else {
             res.status(500).send('Error').end();
         }
     } catch (error) {
-        console.error('Error sending email:', error);
-        res.status(500).json({ message: 'Failed to send email.' });
+        _logger.error('Error sending email: ', {error});
+        res.status(500).json({message: 'Failed to send email.'});
     }
 });
 
