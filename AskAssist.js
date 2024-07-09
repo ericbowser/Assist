@@ -4,10 +4,9 @@ async function askAssist(question) {
     try {
         console.log('client');
         if(openAiClient) {
-           const completion = openAiClient.create({
+           return await openAiClient.create({
                Message: question
            });
-           return completion;
         } else {
             const errorMessage = {
                 Message: 'Failed to ask assistant'
