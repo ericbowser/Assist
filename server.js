@@ -9,6 +9,7 @@ const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
 const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
+const {askClaude} = require('./api/claudeApi');
 
 router.use(cors());
 router.use(express.json());
@@ -35,6 +36,22 @@ router.get("/getTransactions", async (req, res) => {
         console.error(err);
     }
 });
+
+router.post("/askClaude", async (req, res) => {
+    let message = '';
+    if (!req.body) {
+        return res.status(400).send("Error: No message").end();
+    }
+    try {
+        const question = req?.body?.content || null;
+        message = await askClaude(question);
+    } catch (error) {
+        _logger.error(error);
+    }
+
+    return res.status(500).send(message).end();
+});
+
 router.post("/askAssist", async (req, res) => {
     try {
         if (!req.body) {
@@ -155,7 +172,7 @@ router.post("/saveImageUrl", async (req, res) => {
     }
 })
 
-router.post('/generate-image', async (req, res) => {
+router.post('/generateImage', async (req, res) => {
     const {prompt} = req.body;
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
@@ -175,6 +192,7 @@ router.post('/generate-image', async (req, res) => {
             }
         );
 
+        _logger.info("Image response from OpenAI", {response})
         const imageUrl = response.data.data[0].url;
         res.json({imageUrl});
     } catch (error) {

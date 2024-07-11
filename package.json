@@ -4,7 +4,7 @@
   "description": "My Personal Assist",
   "main": "index.js",
   "scripts": {
-    "build": "docker build .",
+    "build": "docker build -t assist .",
     "start": "docker run assist",
     "run": "docker run -p 32636:32636 assist",
     "serve": "npm run serve",
