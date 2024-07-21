@@ -10,6 +10,7 @@ const axios = require('axios');
 const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
 const {askClaude} = require('./api/claudeApi');
+const getExchanges = require('./api/ccxtApi');
 
 router.use(cors());
 router.use(express.json());
@@ -42,8 +43,9 @@ router.post("/askClaude", async (req, res) => {
     if (!req.body) {
         return res.status(400).send("Error: No message").end();
     }
+    const question = req.body?.content || null;
+    _logger.info("Calling ask Claude through Anthropic API", {question});
     try {
-        const question = req?.body?.content || null;
         message = await askClaude(question);
     } catch (error) {
         _logger.error(error);
@@ -51,6 +53,11 @@ router.post("/askClaude", async (req, res) => {
 
     return res.status(500).send(message).end();
 });
+
+router.get("/ccxt", async (req, res) => {
+    const exchanges = await getExchanges();
+    return res.status(200).send({exchanges: exchanges}).end();
+})
 
 router.post("/askAssist", async (req, res) => {
     try {
@@ -110,28 +117,48 @@ router.post("/askAssist", async (req, res) => {
     }
 });
 
-router.post("/save", async (req, res) => {
-    const {thread, question, answer} = req.body;
-    console.log('Message body: ', answer);
-    console.log('Thread: ', thread);
-    console.log('Question: ', question);
+router.post("/login", async (req, res) => {
+    const {username, password} = req.body;
+    _logger.info('request body for laser tags: ', {credentials: req.body});
     try {
-        if (answer && question) {
-            const connection = await connectLocalPostgres();
-            const query =
-                `INSERT INTO public.messages(answer, thread, question)
-                 VALUES (${answer}, ${thread}, ${question})`;
+        const connection = await connectLocalPostgres();
+        const query =
+            `SELECT * FROM public."user" WHERE username = '${username}' 
+                AND password = '${password}'`; 
 
-            const save = await connection.query(query);
-            console.log(save.rowCount);
-            const rowcount = {
-                "row count": save.rowCount
-            };
-            return res.status(200).send(rowcount).end();
-        } else {
-            return res.status(400).send().end();
+        _logger.info("Fetching user if they exist", {query: query});
+        const user = await connection.query(query);
+        if (user.rowCount > 0) {
+            _logger.info('User already exists', {user});
+            return res.status(200).send({'message': 'User exists'}).end();
         }
+        
+        // Save login info
+        
+        
+        return res.status(200).send({'message': 'User saved', 'userId': 1}).end();
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send(err.message).end();
+    }
+});
 
+router.post("/saveLaserTag", async (req, res) => {
+    const {username, password, firstname, lastname, petname, phone, address, city, state} = req.body;
+    _logger.info('request body for laser tags: ', {request: req.body});
+    try {
+        const connection = await connectLocalPostgres();
+        const query =
+            `INSERT INTO public."user"(username, password, firstname, lastname, petname, phone, address, city, state)
+            VALUES ('${username}', '${password}', '${firstname}', '${lastname}', '${petname}', '${phone}', '${address}', '${city}', '${state}');`;
+        
+        _logger.info("Inserting into user using postgres with params: ", {query: query});
+        const save = await connection.query(query);
+        console.log(save.rowCount);
+        const rowcount = {
+            "row count": save.rowCount
+        };
+        return res.status(200).send(rowcount).end();
     } catch (err) {
         console.log(err);
         return res.status(500).send(err.message).end();
