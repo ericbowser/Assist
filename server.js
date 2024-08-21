@@ -9,7 +9,7 @@ const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
 const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
-const {askClaude} = require('./api/claudeApi');
+const askClaude = require('./api/claudeApi');
 const getExchanges = require('./api/ccxtApi');
 
 router.use(cors());
@@ -47,6 +47,17 @@ router.post("/askClaude", async (req, res) => {
     _logger.info("Calling ask Claude through Anthropic API", {question});
     try {
         message = await askClaude(question);
+        console.log(message)
+        if (message) {
+            const response = {
+                data: message.content[0].text,
+                thread: message.id
+            }
+            console.log('sending response: ', response);
+            return res.status(200).send(response).end();
+        } else {
+            return res.status(400).send(message).end();
+        }
     } catch (error) {
         _logger.error(error);
     }
@@ -98,7 +109,7 @@ router.post("/askAssist", async (req, res) => {
             const response = await client.create(body);
             if (response) {
                 _logger.info('success response', {response});
-                return res.status(200).send(response)
+                return res.status(200).send(response).end();
             } else {
                 _logger.error('Failed to get response', response);
                 return res.status(500).send(response);
@@ -123,17 +134,25 @@ router.post("/login", async (req, res) => {
     try {
         const connection = await connectLocalPostgres();
         const query =
-            `SELECT * FROM public."user" WHERE username = '${username}' 
-                AND password = '${password}'`; 
+            `SELECT * FROM public."user" WHERE username = '${username}'
+                AND password = '${password}'`;
 
         _logger.info("Fetching user if they exist", {query: query});
         const user = await connection.query(query);
         if (user.rowCount > 0) {
             _logger.info('User already exists', {user});
-            return res.status(200).send({'message': 'User exists'}).end();
+            return res.status(200).send({user}).end();
+        } else {
+            _logger.info('Saving new login record...');
+            const sql = `INSERT INTO public."user"(username, password) VALUES (${username}, ${password}, true, CURRENT_TIMESTAMP); RETURN userid`;
+            const loggedIn = await connection.query(sql);
+            if(loggedIn) {
+            
+            }
         }
         
         // Save login info
+        
         
         
         return res.status(200).send({'message': 'User saved', 'userId': 1}).end();
@@ -143,8 +162,9 @@ router.post("/login", async (req, res) => {
     }
 });
 
+/*
 router.post("/saveLaserTag", async (req, res) => {
-    const {username, password, firstname, lastname, petname, phone, address, city, state} = req.body;
+    const {userid, username, password} = req.body;
     _logger.info('request body for laser tags: ', {request: req.body});
     try {
         const connection = await connectLocalPostgres();
@@ -164,6 +184,7 @@ router.post("/saveLaserTag", async (req, res) => {
         return res.status(500).send(err.message).end();
     }
 })
+*/
 
 router.post("/fetchImageUrls", async (req, res) => {
     try {
