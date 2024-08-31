@@ -11,6 +11,7 @@ const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
 const askClaude = require('./api/claudeApi');
 const getExchanges = require('./api/ccxtApi');
+const {OpenAI} = require("openai");
 
 router.use(cors());
 router.use(express.json());
@@ -49,12 +50,12 @@ router.post("/askClaude", async (req, res) => {
         message = await askClaude(question);
         console.log(message)
         if (message) {
-            const response = {
-                data: message.content[0].text,
+            const data = {
+                answer: message.content[0].text,
                 thread: message.id
-            }
-            console.log('sending response: ', response);
-            return res.status(200).send(response).end();
+            };
+            console.log('sending response: ', {...data});
+            return res.status(200).send(data).end();
         } else {
             return res.status(400).send(message).end();
         }
@@ -106,10 +107,14 @@ router.post("/askAssist", async (req, res) => {
             }
 
             _logger.info("sending Assist message for model: ", {model: body.model})
-            const response = await client.create(body);
+            const response = await client.chat.completions.create(body);
             if (response) {
-                _logger.info('success response', {response});
-                return res.status(200).send(response).end();
+                const data = {
+                    thread: response.id,
+                    answer: response.choices[0].message.content
+                };
+                _logger.info('success response', {data});
+                return res.status(200).send(data).end();
             } else {
                 _logger.error('Failed to get response', response);
                 return res.status(500).send(response);
@@ -222,11 +227,13 @@ router.post("/saveImageUrl", async (req, res) => {
 
 router.post('/generateImage', async (req, res) => {
     const {prompt} = req.body;
+    console.log('generate image', prompt);
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
     try {
-        const response = await axios.post(
-            'https://api.openai.com/v1/images/generations',
+        const client = await initialiseAssist(); 
+      /*  const response = await axios.post(
+            'https://api.openai.com/v2/images/generations',
             {
                 prompt,
                 n: 1,
@@ -238,11 +245,19 @@ router.post('/generateImage', async (req, res) => {
                     'Content-Type': 'application/json'
                 }
             }
-        );
+        );*/
 
-        _logger.info("Image response from OpenAI", {response})
-        const imageUrl = response.data.data[0].url;
-        res.json({imageUrl});
+        const params = {
+            prompt: prompt,
+            n: 1,
+            size: '1024x1024',
+            response_format: 'url',
+        };
+        const imageUrl = await client.images.generate(params);
+        _logger.info("Image response from OpenAI", {imageUrl})
+        const image = imageUrl.data[0].url;
+        console.log('images',image);
+        return await image ? res.status(200).send({image}).end() : res.status(500).send('Error generating image');
     } catch (error) {
         console.error('Error generating image:', error);
         res.status(500).send('Error generating image');

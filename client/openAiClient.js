@@ -1,4 +1,4 @@
-﻿const { OpenAI } = require("openai");
+﻿const {OpenAI, ImageGenerateParams} = require("openai");
 const config = require('dotenv').config();
 
 let openAiClient = null;
@@ -6,12 +6,16 @@ function initialiseAssist(){
     try {
         if (!openAiClient) {
             const openAiApi = new OpenAI({
+                apiVersion: "v2",
                 apiKey: config.parsed.OPENAI_API_KEY,
-                organization: config.parsed.ASSISTANT_ORG
+                organization: config.parsed.OPENAI_ORG,
+                debug: true,
+                verbose: true,
+                timeout: 60000
             });
+            console.log('open ai base url', openAiApi.baseURL);
             if (openAiApi) {
-                openAiClient = openAiApi.chat.completions;
-                return openAiClient;
+                return openAiApi;
             } else {
                 return {Message: 'Failed to retrieve api object'};
             }
