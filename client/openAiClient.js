@@ -13,7 +13,7 @@ function initialiseAssist(){
                 verbose: true,
                 timeout: 60000
             });
-            console.log('open ai base url', openAiApi.baseURL);
+            console.log('open ai base url', openAiApi.organization);
             if (openAiApi) {
                 return openAiApi;
             } else {

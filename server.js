@@ -134,62 +134,148 @@ router.post("/askAssist", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-    const {username, password} = req.body;
+    const {email, password} = req.body;
     _logger.info('request body for laser tags: ', {credentials: req.body});
     try {
         const connection = await connectLocalPostgres();
         const query =
-            `SELECT * FROM public."user" WHERE username = '${username}'
-                AND password = '${password}'`;
+            `SELECT *
+             FROM public."user"
+             WHERE email = '${email}'
+               AND password = '${password}'`;
 
-        _logger.info("Fetching user if they exist", {query: query});
         const user = await connection.query(query);
         if (user.rowCount > 0) {
-            _logger.info('User already exists', {user});
-            return res.status(200).send({user}).end();
-        } else {
-            _logger.info('Saving new login record...');
-            const sql = `INSERT INTO public."user"(username, password) VALUES (${username}, ${password}, true, CURRENT_TIMESTAMP); RETURN userid`;
-            const loggedIn = await connection.query(sql);
-            if(loggedIn) {
-            
-            }
+            _logger.info("User found: ", {found: user.rows[0]});
+            return res.status(200).send({data: user.rows[0], exists: true}).end();
         }
-        
-        // Save login info
-        
-        
-        
-        return res.status(200).send({'message': 'User saved', 'userId': 1}).end();
+
+        _logger.info('Saving new login record...');
+        const sql =
+            `INSERT INTO public."user"(email, password, isloggedin, updateondate)
+             VALUES ('${email}', '${password}', true, CURRENT_TIMESTAMP) RETURNING userid`;
+
+        console.log(sql);
+        const loggedIn = await connection.query(sql);
+
+        if (loggedIn.rowCount > 0) {
+            _logger.info('User saved', {loggedIn});
+            return res.status(200).send({userid: loggedIn.rows[0].userid.toString()}).end();
+        }
     } catch (err) {
         console.log(err);
         return res.status(500).send(err.message).end();
     }
 });
 
-/*
-router.post("/saveLaserTag", async (req, res) => {
-    const {userid, username, password} = req.body;
-    _logger.info('request body for laser tags: ', {request: req.body});
+router.get("/getContact/:userid", async (req, res) => {
+    const userid = req.params.userid;
+    _logger.info('user id param', {userid});
+    try {
+        const userId = parseInt(userid);
+        const sql = `SELECT *
+                     FROM public."contact"
+                     WHERE userid = ${userId}`;
+        const connection = await connectLocalPostgres();
+        const response = await connection.query(sql);
+        _logger.info('response', {response});
+        let contact = null;
+        if (response.rowCount > 0) {
+            contact = {
+                userid: response.rows[0].userid.toString(), //response.rows[0].userid,
+                firstname: response.rows[0].firstname,
+                lastname: response.rows[0].lastname,
+                petname: response.rows[0].petname,
+                phone: response.rows[0].phone,
+                address: response.rows[0].address,
+            }
+            _logger.info('Contact found: ', {contact});
+            return res.status(200).send({...contact, exists: true}).end();
+        } else {
+            return res.status(200).send({userid: userid, exists: false}).end();
+        }
+    } catch (error) {
+        console.log(error);
+        _logger.error('Error getting contact: ', {error});
+        return res.status(500).send(error).end();
+    }
+});
+
+router.post("/saveContact", async (req, res) => {
+    const { userid, firstname, lastname, petname, phone, address, } = req.body;
+    _logger.info('request body for save contact: ', { request: req.body });
+
     try {
         const connection = await connectLocalPostgres();
-        const query =
-            `INSERT INTO public."user"(username, password, firstname, lastname, petname, phone, address, city, state)
-            VALUES ('${username}', '${password}', '${firstname}', '${lastname}', '${petname}', '${phone}', '${address}', '${city}', '${state}');`;
-        
-        _logger.info("Inserting into user using postgres with params: ", {query: query});
-        const save = await connection.query(query);
-        console.log(save.rowCount);
-        const rowcount = {
-            "row count": save.rowCount
-        };
-        return res.status(200).send(rowcount).end();
-    } catch (err) {
-        console.log(err);
-        return res.status(500).send(err.message).end();
+        const query = `
+      INSERT INTO public.contact(
+        firstname, lastname, petname, phone, address, userid
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *;
+    `;
+
+        const values = [
+            firstname,
+            lastname,
+            petname,
+            phone,
+            address,
+            parseInt(userid)
+        ];
+
+        const response = await connection.query(query, values);
+
+        _logger.info('Contact saved: ', { response: response.rows[0] });
+
+        return res.status(201).send(response.rows[0]).end();
+    } catch (error) {
+        console.error(error);
+        _logger.error('Error saving contact: ', { error });
+
+        return res.status(500).send(error).end();
     }
-})
-*/
+});
+
+router.post("/updateContact", async (req, res) => {
+    const { userid, firstname, lastname, petname, phone, address, } = req.body;
+    _logger.info('request body for update contact: ', { request: req.body });
+
+    try {
+        const connection = await connectLocalPostgres();
+        const query = `UPDATE public.contact
+            SET 
+              firstname = $1,
+              lastname = $2,
+              petname = $3,
+              phone = $4,
+              address = $5
+            WHERE userid = $6;`;
+
+        const values = [
+            firstname,
+            lastname,
+            petname,
+            phone,
+            address,
+            parseInt(userid)
+        ];
+
+        const response = await connection.query(query, values);
+        _logger.info('Contact updated: ', { response });
+        if (response.rowCount > 0) {
+            _logger.info('Contact updated: ', { contactUpdated: response.rowCount });
+            return res.status(200).send({contactUpdated: true}).end(); 
+        } else {
+            return res.status(200).send({contactUpdated: false}).end(); 
+        }
+    } catch (error) {
+        console.error(error);
+        _logger.error('Error saving contact: ', { error });
+
+        return res.status(500).send(error).end();
+    }
+});
 
 router.post("/fetchImageUrls", async (req, res) => {
     try {
@@ -231,21 +317,21 @@ router.post('/generateImage', async (req, res) => {
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
     try {
-        const client = await initialiseAssist(); 
-      /*  const response = await axios.post(
-            'https://api.openai.com/v2/images/generations',
-            {
-                prompt,
-                n: 1,
-                size: '1024x1024'
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${openaiApiKey}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );*/
+        const client = await initialiseAssist();
+        /*  const response = await axios.post(
+              'https://api.openai.com/v2/images/generations',
+              {
+                  prompt,
+                  n: 1,
+                  size: '1024x1024'
+              },
+              {
+                  headers: {
+                      'Authorization': `Bearer ${openaiApiKey}`,
+                      'Content-Type': 'application/json'
+                  }
+              }
+          );*/
 
         const params = {
             prompt: prompt,
@@ -256,7 +342,7 @@ router.post('/generateImage', async (req, res) => {
         const imageUrl = await client.images.generate(params);
         _logger.info("Image response from OpenAI", {imageUrl})
         const image = imageUrl.data[0].url;
-        console.log('images',image);
+        console.log('images', image);
         return await image ? res.status(200).send({image}).end() : res.status(500).send('Error generating image');
     } catch (error) {
         console.error('Error generating image:', error);
