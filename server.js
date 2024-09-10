@@ -11,6 +11,7 @@ const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
 const askClaude = require('./api/claudeApi');
 const getExchanges = require('./api/ccxtApi');
+const createCustomer = require('./api/stripe');
 const {OpenAI} = require("openai");
 
 router.use(cors());
@@ -190,9 +191,9 @@ router.get("/getContact/:userid", async (req, res) => {
                 address: response.rows[0].address,
             }
             _logger.info('Contact found: ', {contact});
-            return res.status(200).send({...contact, exists: true}).end();
+            return res.status(201).send({...contact}).end();
         } else {
-            return res.status(200).send({userid: userid, exists: false}).end();
+            return res.status(204).send({userid: userid}).end();
         }
     } catch (error) {
         console.log(error);
@@ -202,18 +203,15 @@ router.get("/getContact/:userid", async (req, res) => {
 });
 
 router.post("/saveContact", async (req, res) => {
-    const { userid, firstname, lastname, petname, phone, address, } = req.body;
-    _logger.info('request body for save contact: ', { request: req.body });
+    const {userid, firstname, lastname, petname, phone, address,} = req.body;
+    _logger.info('request body for save contact: ', {request: req.body});
 
     try {
         const connection = await connectLocalPostgres();
         const query = `
-      INSERT INTO public.contact(
-        firstname, lastname, petname, phone, address, userid
-      )
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *;
-    `;
+            INSERT INTO public.contact(firstname, lastname, petname, phone, address, userid)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+        `;
 
         const values = [
             firstname,
@@ -226,31 +224,30 @@ router.post("/saveContact", async (req, res) => {
 
         const response = await connection.query(query, values);
 
-        _logger.info('Contact saved: ', { response: response.rows[0] });
+        _logger.info('Contact saved: ', {response: response.rows[0]});
 
         return res.status(201).send(response.rows[0]).end();
     } catch (error) {
         console.error(error);
-        _logger.error('Error saving contact: ', { error });
+        _logger.error('Error saving contact: ', {error});
 
         return res.status(500).send(error).end();
     }
 });
 
 router.post("/updateContact", async (req, res) => {
-    const { userid, firstname, lastname, petname, phone, address, } = req.body;
-    _logger.info('request body for update contact: ', { request: req.body });
+    const {userid, firstname, lastname, petname, phone, address,} = req.body;
+    _logger.info('request body for update contact: ', {request: req.body});
 
     try {
         const connection = await connectLocalPostgres();
         const query = `UPDATE public.contact
-            SET 
-              firstname = $1,
-              lastname = $2,
-              petname = $3,
-              phone = $4,
-              address = $5
-            WHERE userid = $6;`;
+                       SET firstname = $1,
+                           lastname  = $2,
+                           petname   = $3,
+                           phone     = $4,
+                           address   = $5
+                       WHERE userid = $6;`;
 
         const values = [
             firstname,
@@ -262,18 +259,28 @@ router.post("/updateContact", async (req, res) => {
         ];
 
         const response = await connection.query(query, values);
-        _logger.info('Contact updated: ', { response });
+        _logger.info('Contact updated: ', {response});
         if (response.rowCount > 0) {
-            _logger.info('Contact updated: ', { contactUpdated: response.rowCount });
-            return res.status(200).send({contactUpdated: true}).end(); 
+            _logger.info('Contact updated: ', {contactUpdated: response.rowCount});
+            return res.status(200).send({contactUpdated: true}).end();
         } else {
-            return res.status(200).send({contactUpdated: false}).end(); 
+            return res.status(200).send({contactUpdated: false}).end();
         }
     } catch (error) {
         console.error(error);
-        _logger.error('Error saving contact: ', { error });
+        _logger.error('Error saving contact: ', {error});
 
         return res.status(500).send(error).end();
+    }
+});
+
+
+router.post("/stripePayment", async (req, res) => {
+    try {
+        
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send(err.message).end();
     }
 });
 
