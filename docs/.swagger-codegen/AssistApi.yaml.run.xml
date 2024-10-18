@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AssistApi.yaml" type="SwaggerCodegen" editBeforeRun="true" focusToolWindowBeforeRun="true" show_console_on_std_err="false" show_console_on_std_out="false">
+    <option name="allowRunningInParallel" value="false" />
+    <option name="customTemplatesPath" value="" />
+    <option name="generateToPath" value="C:\Users\ericr\gen" />
+    <option name="generationParameters">
+      <list>
+        <CliArgumentViewModel>
+          <option name="name" value="sortParamsByRequiredFlag" />
+          <option name="value" value="true" />
+        </CliArgumentViewModel>
+      </list>
+    </option>
+    <option name="generatorType" value="OPENAPI_GENERATOR_V7" />
+    <option name="jdkPath" value="C:\Program Files\JetBrains\JetBrains Rider 2024.2.2\jbr\bin\java.exe" />
+    <option name="language" value="java" />
+    <option name="projectPathOnTarget" />
+    <option name="selectedOptions">
+      <list />
+    </option>
+    <option name="specificationPath" value="C:\Projects\Assist\docs\AssistApi.yaml" />
+    <method v="2" />
+  </configuration>
+</component>

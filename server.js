@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const {addEmbedding, getEmbedding} = require('./Embeddings');
-const initialiseAssist = require('./client/openAiClient');
+const {InitialiseChat, InitialiseAssist} = require('./client/openAiClient');
 const config = require('dotenv').config();
 const cors = require('cors');
-const {connectLocalPostgres} = require('./pg/client');
+const {connectLocalPostgres} = require('./documentdb/client');
 const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
 const sendEmailWithAttachment = require('./api/gmailSender');
@@ -13,7 +13,12 @@ const askClaude = require('./api/claudeApi');
 const getExchanges = require('./api/ccxtApi');
 const createCustomer = require('./api/stripe');
 const {OpenAI} = require("openai");
+const {sleep} = require("openai/core");
+const bodyParser = require('body-parser');
+const {AssistantCreateParams} = require("openai");
+const connectToMongo = require("./documentdb/mongoClient");
 
+router.use(bodyParser.json());
 router.use(cors());
 router.use(express.json());
 router.use(express.urlencoded({extended: true}));
@@ -72,20 +77,18 @@ router.get("/ccxt", async (req, res) => {
     return res.status(200).send({exchanges: exchanges}).end();
 })
 
-router.post("/askAssist", async (req, res) => {
+router.post("/askChat", async (req, res) => {
     try {
         if (!req.body) {
             return res.status(400).send("Error: No message").end();
         }
 
-        const client = await initialiseAssist();
-        _logger.info("Received Assist client: ", {client})
-
         const question = req?.body?.content || null;
         const instructions = req?.body?.instructions || null;
+        console.log('question', question);
+        console.log('instructions', instructions);
 
-        const cleanText = question.replace(/[\n']/g, '');
-        _logger.info("Ask assist message exists from request body", {body: cleanText});
+        const client = await InitialiseChat();
 
         if (!question) {
             return res.status(400).send({Message: `bad request for params ${question}`})
@@ -99,26 +102,21 @@ router.post("/askAssist", async (req, res) => {
                         "role": "user",
                         "content": question
                     },
-                    {
-                        "role": "assistant",
-                        "content": instructions
-                    }
                 ],
                 stream: false
             }
 
-            _logger.info("sending Assist message for model: ", {model: body.model})
-            const response = await client.chat.completions.create(body);
-            if (response) {
+            const resp = await client.chat.completions.create(body);
+            if (resp) {
                 const data = {
-                    thread: response.id,
-                    answer: response.choices[0].message.content
+                    thread: resp.id,
+                    answer: resp.choices[0].message.content
                 };
-                _logger.info('success response', {data});
+
                 return res.status(200).send(data).end();
             } else {
-                _logger.error('Failed to get response', response);
-                return res.status(500).send(response);
+                _logger.error('Failed to get response', resp);
+                return res.status(500).send(resp);
             }
         } else {
             const message = {
@@ -133,6 +131,67 @@ router.post("/askAssist", async (req, res) => {
         return res.status(500).send(err).end();
     }
 });
+
+router.post("/askAssist", async (req, res) => {
+    
+    try {
+        if (!req.body) {
+            return res.status(400).send("Error: No message").end();
+        }
+
+        const question = req?.body?.content || null;
+        const instructions = req?.body?.instructions || null;
+
+        if (!question) {
+            return res.status(400).send({Message: `bad request for params ${question}`})
+        }
+
+        const thread = await InitialiseAssist(question, instructions);
+        if (thread) {
+            return res.status(200).send(thread).end();
+        }
+
+        return res.status(500).send({error: "Thread failed to run"}).end();
+    } catch (err) {
+        _logger.error("Failed with error: ", {err});
+        return res.status(500).send(err).end();
+    }
+});
+
+router.get("/saveDocument", async (req, res) => {
+    const {document} = req.body;
+
+    try {
+        if (!document) {
+            return res.status(400).send("Error: No document to save").end();
+        }
+        
+        const movie = await connectToMongo();
+        _logger.info("Mongo Client connected and test db movie: ", {movie});
+        
+        return res.status(200).send({movie}).end();
+
+    } catch (err) {
+        _logger.error("Failed with error: ", {err});
+        return res.status(500).send(err).end();
+    }
+});
+
+async function retry(queueThread = () => {
+}) {
+    const promise = new Promise((resolve, reject) => {
+        queueThread().then(res => {
+            if (res.status === 'completed') {
+                resolve(true);
+            } else {
+
+            }
+        });
+        setTimeout(() => {
+            reject('Timeout Error: Promise took too long to resolve');
+        }, 2000);
+    });
+}
 
 router.post("/login", async (req, res) => {
     const {email, password} = req.body;
@@ -277,7 +336,7 @@ router.post("/updateContact", async (req, res) => {
 
 router.post("/stripePayment", async (req, res) => {
     try {
-        
+
     } catch (err) {
         console.log(err);
         return res.status(500).send(err.message).end();
@@ -324,7 +383,7 @@ router.post('/generateImage', async (req, res) => {
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
     try {
-        const client = await initialiseAssist();
+        const client = await InitialiseChat(openaiApiKey);
         /*  const response = await axios.post(
               'https://api.openai.com/v2/images/generations',
               {
@@ -349,8 +408,8 @@ router.post('/generateImage', async (req, res) => {
         const imageUrl = await client.images.generate(params);
         _logger.info("Image response from OpenAI", {imageUrl})
         const image = imageUrl.data[0].url;
-        console.log('images', image);
-        return await image ? res.status(200).send({image}).end() : res.status(500).send('Error generating image');
+        celemenu.log('images', image);
+        return image ? res.status(200).send({image}).end() : res.status(500).send('Error generating image');
     } catch (error) {
         console.error('Error generating image:', error);
         res.status(500).send('Error generating image');
