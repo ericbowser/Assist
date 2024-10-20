@@ -14,6 +14,7 @@
   "author": "Eric Ryan Bowser - E.R.B.",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.3.1",
     "@alpacahq/alpaca-trade-api": "^3.0.1",
     "@anthropic-ai/sdk": "^0.26.1",
     "@binance/connector": "^3.3.0",
@@ -38,14 +39,12 @@
     "process": "^0.11.10",
     "stripe": "^16.10.0",
     "url": "^0.11.3",
-    "wss": "^3.3.4"
+    "wss": "^3.3.4",
+    "swagger-jsdoc": "^6.2.8",
+    "nodemon": "^2.0.20",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "dotencr": "^1.0.3",
-    "dotenv": "^16.3.1",
-    "nodemon": "^2.0.20",
-    "serve": "^14.2.1",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "dotencr": "^1.0.3"
   }
 }

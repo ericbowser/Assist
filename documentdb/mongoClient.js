@@ -1,7 +1,6 @@
 // Database Name
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const dotenv = require("dotenv").config();
-console.log(dotenv.parsed.MONGO_URI);
 
 const uri = `${dotenv.parsed.MONGO_DRIVER}${dotenv.parsed.MONGO_URI}${dotenv.parsed.MONGO_QUERY_PARAM}`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
