@@ -193,9 +193,14 @@ async function retry(queueThread = () => {
     });
 }
 
+// Laser Tags login
 router.post("/login", async (req, res) => {
     const {email, password} = req.body;
     _logger.info('request body for laser tags: ', {credentials: req.body});
+    let data = {
+        user: null,
+        error: null
+    };
     try {
         const connection = await connectLocalPostgres();
         const query =
@@ -206,8 +211,15 @@ router.post("/login", async (req, res) => {
 
         const user = await connection.query(query);
         if (user.rowCount > 0) {
-            _logger.info("User found: ", {found: user.rows[0]});
-            return res.status(200).send({data: user.rows[0], exists: true}).end();
+            _logger.info("User found: ", {found: user.rows[0].userid});
+            const userid = user.rows[0].userid;
+            data = {
+                userid: userid,
+                user: {...user.rows[0]},
+                exists: true,
+                error: null
+            };
+            return res.status(200).send({data}).end();
         }
 
         _logger.info('Saving new login record...');
@@ -215,12 +227,17 @@ router.post("/login", async (req, res) => {
             `INSERT INTO public."user"(email, password, isloggedin, updateondate)
              VALUES ('${email}', '${password}', true, CURRENT_TIMESTAMP) RETURNING userid`;
 
-        console.log(sql);
+        _logger.info('SQL: ', {sql});
         const loggedIn = await connection.query(sql);
-
         if (loggedIn.rowCount > 0) {
-            _logger.info('User saved', {loggedIn});
-            return res.status(200).send({userid: loggedIn.rows[0].userid.toString()}).end();
+            _logger.info('User saved', {userInfo: {...loggedIn.rows[0]}});
+            data = {
+                    userid: user.rows[0].userid,
+                    user: loggedIn.rows[0],
+                    exists: false,
+                    error: null
+                };
+            return res.status(201).send({...data}).end();
         }
     } catch (err) {
         console.log(err);
@@ -250,9 +267,17 @@ router.get("/getContact/:userid", async (req, res) => {
                 address: response.rows[0].address,
             }
             _logger.info('Contact found: ', {contact});
-            return res.status(201).send({...contact}).end();
+            const data = {
+                contact: contact,
+                exists: true
+            }
+            return res.status(201).send(data).end();
         } else {
-            return res.status(204).send({userid: userid}).end();
+            const data = {
+                contact: contact,
+                exists: false
+            }
+            return res.status(204).send(data).end();
         }
     } catch (error) {
         console.log(error);
