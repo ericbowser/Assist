@@ -8,4 +8,4 @@ services:
       - .env
       - .env.vault
     ports:
-      - 32636:32636
+      - "32636:32636"

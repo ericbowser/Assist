@@ -72,6 +72,31 @@ router.post("/askClaude", async (req, res) => {
     return res.status(500).send(message).end();
 });
 
+router.post("/askGemini", async (req, res) => {
+    const {question} = req.body;
+    if (!question) {
+        return res.status(400).send("Error: No message").end();
+    }
+    _logger.info("Calling gemini API with question: ", {question});
+    try {
+        const message = await askClaude(question);
+        if (message) {
+            const data = {
+                answer: message.content[0].text,
+                thread: message.id
+            };
+            console.log('sending response: ', {...data});
+            return res.status(200).send(data).end();
+        } else {
+            return res.status(400).send(message).end();
+        }
+    } catch (error) {
+        _logger.error(error);
+    }
+
+    return res.status(500).send(message).end();
+});
+
 router.get("/ccxt", async (req, res) => {
     const exchanges = await getExchanges();
     return res.status(200).send({exchanges: exchanges}).end();
@@ -160,11 +185,12 @@ router.post("/askAssist", async (req, res) => {
 
 router.get("/saveDocument", async (req, res) => {
     const {document} = req.body;
+    _logger.info("passed document to save:", document);
 
     try {
-        if (!document) {
+       /* if (!document) {
             return res.status(400).send("Error: No document to save").end();
-        }
+        }*/
         
         const movie = await connectToMongo();
         _logger.info("Mongo Client connected and test db movie: ", {movie});

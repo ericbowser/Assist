@@ -14,17 +14,11 @@ const client = new MongoClient(uri, {
 
 async function connectToMongoClient() {
     try {
-        const database = client.db('lasertags');
-        const movies = database.collection('movies');
-
-        // Query for a movie that has the title 'Back to the Future'
-        const query = { title: 'Back to the Future' };
-        const movie = await movies.findOne(query);
-        if (!movie) {
-            return null;
-        }
-
-        return movie;
+        // Connect the client to the server	(optional starting in v4.7)
+        await client.connect();
+        // Send a ping to confirm a successful connection
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();

@@ -19,6 +19,8 @@ ENV NODE_ENV production
 
 RUN npm install
 RUN npm install dotenv 
+COPY .env ./
+COPY .env.vault ./
 #RUN npm install nodemon -g
 COPY . .
 
