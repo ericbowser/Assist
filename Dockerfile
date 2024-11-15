@@ -13,18 +13,16 @@ FROM node:${NODE_VERSION}-alpine
 ENV NODE_ENV=production
 
 WORKDIR /app
-COPY package*.json ./
+COPY package*.json ./app/
 
 ENV NODE_ENV production
 
+RUN npm install dotenv
+RUN npm install dotenv-vault
+RUN npm install nodemon -g
 RUN npm install
-RUN npm install dotenv 
-COPY .env ./
-COPY .env.vault ./
-#RUN npm install nodemon -g
 COPY . .
 
-#RUN npx dotenv-vault@latest new
 RUN npx dotenv-vault@latest pull
 
 EXPOSE 32636
