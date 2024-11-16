@@ -1,7 +1,6 @@
 ﻿const {Client} = require('pg');
 const config = require("dotenv").config();
 const path = require('path');
-const Pinecone = require("@pinecone-database/pinecone");
 
 // Change .env based on local dev or prod
 const env = path.resolve(__dirname, '.env');
@@ -27,25 +26,6 @@ async function connectLocalPostgres() {
 	}
 
 	return client;
-}
-
-async function initializePinecone() {
-	try {
-		const pinecone = new Pinecone({
-			environment: "gcp-starter",
-			apiKey: config.parsed.PINECONE_API_KEY,
-		});
-		
-		console.log('pincone obj', pinecone)
-		if (!pinecone) {
-			return { Message: "failed to initialize Pinecone" };
-		}
-
-		return pinecone;
-	} catch (err) {
-		console.log(err);
-		return err;
-	}
 }
 
 module.exports = {connectLocalPostgres};

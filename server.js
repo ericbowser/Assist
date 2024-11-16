@@ -2,14 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {addEmbedding, getEmbedding} = require('./Embeddings');
 const {connectLocalPostgres} = require('./documentdb/client');
-const {getAccount} = require('./api/binanceSpotApi');
-const axios = require('axios');
 const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
-const getExchanges = require('./api/ccxtApi');
-/*
-const createCustomer = require('./api/stripe');
-*/
 const cors = require('cors');
 const {InitialiseClient, AssistMessage} = require("./client/openAiClient");
 const askClaude = require("./client/anthropicClient");
@@ -23,27 +17,6 @@ router.use(express.urlencoded({extended: true}));
 
 let _logger = getLogger();
 _logger.info("Logger Initialized")
-
-let assistClient = null;
-
-router.get("/getBinanceAssets", async (req, res) => {
-  try {
-    const account = getAccount();
-    return res.status(200).send(account).end();
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send(err).end();
-  }
-});
-
-router.get("/getTransactions", async (req, res) => {
-  try {
-    const response = await axios.post(process.env.ALPACA_BASE_URL2);
-    return res.status(200).send(response.data).end();
-  } catch (err) {
-    console.error(err);
-  }
-});
 
 router.post("/askClaude", async (req, res) => {
   let message = '';
@@ -73,13 +46,13 @@ router.post("/askClaude", async (req, res) => {
 });
 
 router.post("/askGemini", async (req, res) => {
-  const {question} = req.body;
+  const {content} = req.body;
   if (!question) {
     return res.status(400).send("Error: No message").end();
   }
-  _logger.info("Calling gemini API with question: ", {question});
+  _logger.info("Calling gemini API with question: ", {content});
   try {
-    const message = await askClaude(question);
+    const message = await askGemini(question);
     if (message) {
       const data = {
         answer: message.content[0].text,
@@ -96,11 +69,6 @@ router.post("/askGemini", async (req, res) => {
 
   return res.status(500).send(message).end();
 });
-
-router.get("/ccxt", async (req, res) => {
-  const exchanges = await getExchanges();
-  return res.status(200).send({exchanges: exchanges}).end();
-})
 
 router.post("/askChat", async (req, res) => {
   _logger.info("Calling /askChat and Request body: ", req.body);
@@ -196,8 +164,8 @@ router.get("/saveDocument", async (req, res) => {
          return res.status(400).send("Error: No document to save").end();
      }*/
 
-    const movie = await connectToMongo();
-    _logger.info("Mongo Client connected and test db movie: ", {movie});
+    const ping = await connectToMongo();
+    _logger.info("Mongo Client Ping: ", {ping});
 
     return res.status(200).send({movie}).end();
 
@@ -206,22 +174,6 @@ router.get("/saveDocument", async (req, res) => {
     return res.status(500).send(err).end();
   }
 });
-
-async function retry(queueThread = () => {
-}) {
-  const promise = new Promise((resolve, reject) => {
-    queueThread().then(res => {
-      if (res.status === 'completed') {
-        resolve(true);
-      } else {
-
-      }
-    });
-    setTimeout(() => {
-      reject('Timeout Error: Promise took too long to resolve');
-    }, 2000);
-  });
-}
 
 // Laser Tags login
 router.post("/login", async (req, res) => {
@@ -431,45 +383,6 @@ router.post("/saveImageUrl", async (req, res) => {
     return res.status(500).send(err.message).end();
   }
 })
-
-router.post('/generateImage', async (req, res) => {
-  const {prompt} = req.body;
-  console.log('generate image', prompt);
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-
-  try {
-    const client = await InitialiseChat(openaiApiKey);
-    /*  const response = await axios.post(
-          'https://api.openai.com/v2/images/generations',
-          {
-              prompt,
-              n: 1,
-              size: '1024x1024'
-          },
-          {
-              headers: {
-                  'Authorization': `Bearer ${openaiApiKey}`,
-                  'Content-Type': 'application/json'
-              }
-          }
-      );*/
-
-    const params = {
-      prompt: prompt,
-      n: 1,
-      size: '1024x1024',
-      response_format: 'url',
-    };
-    const imageUrl = await client.images.generate(params);
-    _logger.info("Image response from OpenAI", {imageUrl})
-    const image = imageUrl.data[0].url;
-    celemenu.log('images', image);
-    return image ? res.status(200).send({image}).end() : res.status(500).send('Error generating image');
-  } catch (error) {
-    console.error('Error generating image:', error);
-    res.status(500).send('Error generating image');
-  }
-});
 
 router.post("/addEmbedding", async (req, res) => {
   const text = req.body.text;

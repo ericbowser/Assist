@@ -1,5 +1,5 @@
 ﻿const config = require('dotenv').config();
-const openAiClient = require('./client/openAiClient')
+const {openAiClient} = require('./client/openAiClient')
 
 async function getEmbedding(text) {
 	console.log('embedding vectors: ', text);
@@ -25,22 +25,4 @@ async function getEmbedding(text) {
 	}
 }
 
-async function addEmbedding(embeddingText) {
-	console.log('text to embed', embeddingText)
-
-	const embed= {
-		model: config.parsed.EMBEDDING_MODEL,
-		input: embeddingText
-	};
-	
-	try {
-		const embedding = await openAiClient.embeddings.create(embed);
-		console.log(embedding);
-		return embedding;
-	} catch(err) {
-		console.log("failed to embed with error: ", err);
-		return err;
-	}
-}
-
-module.exports = {addEmbedding, getEmbedding};
+module.exports = { getEmbedding};
