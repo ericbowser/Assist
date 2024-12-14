@@ -1,35 +1,64 @@
 const {
-    FunctionDeclarationSchemaType,
-    HarmBlockThreshold,
-    HarmCategory,
-    VertexAI
+  VertexAI
 } = require('@google-cloud/vertexai');
 const {GoogleGenerativeAi} = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const config = require('dotenv').config();
 
 const project = 'google-cloud';
 const location = 'us-west3';
-const textModel =  'gemini-1.0-pro';
-const visionModel = 'gemini-1.0-pro-vision';
+const pro = process.env.GEMINI_PRO;
+const flash = process.env.GEMINI_PRO;
+const visionModel = process.env.GEMINI_VISION;
 
-const vertexAI = new VertexAI({project: project, location: location});
-
-// Instantiate Gemini models
-const generativeModel = vertexAI.getGenerativeModel({
-    model: textModel,
-    // The following parameters are optional
-    // They can also be passed to individual content generation requests
-    safetySettings: [{category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE}],
+function geminiFlashModel() {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: flash,
+    location,
+    maxTokens: 2000,
     generationConfig: {maxOutputTokens: 256},
     systemInstruction: {
-        role: 'system',
-        parts: [{"text": `For example, you are a helpful customer service agent.`}]
+      role: 'system',
+      parts: [{'text': 'General everyday business and development queries. Oh, and Laser engraving.'}]
     },
+  });
+  return model;
+}
+
+
+const vertexAI = new VertexAI({project: project, location: location});
+vertexAI.getGenerativeModel({
+  model: pro,
+  maxTokens: 3048,
+  generationConfig: {maxOutputTokens: 256},
+  systemInstruction: {
+    role: 'system',
+    parts: [{'text': 'General everyday business and development queries. Oh, and Laser engraving.'}]
+  },
+});
+
+/*
+// Instantiate Gemini models
+const generativeModel = vertexAI.getGenerativeModel({
+  model: pro,
+  // The following parameters are optional
+  // They can also be passed to individual content generation requests
+  maxTokens: 3048,
+  generationConfig: {maxOutputTokens: 256},
+  systemInstruction: {
+    role: 'system',
+    parts: [{'text': 'General everyday business and development queries. Oh, and Laser engraving.'}]
+  },
 });
 
 const generativeVisionModel = vertexAI.getGenerativeModel({
-    model: visionModel,
+  model: visionModel,
 });
 
 const generativeModelPreview = vertexAI.preview.getGenerativeModel({
-    model: textModel,
+  model: flash,
 });
+*/
+
+module.exports = geminiFlashModel;

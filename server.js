@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {addEmbedding, getEmbedding} = require('./Embeddings');
-const {connectLocalPostgres} = require('./documentdb/client');
+const {connectLocalPostgres, connectLocalDockerPostgres} = require('./documentdb/client');
 const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
 const cors = require('cors');
@@ -9,6 +9,9 @@ const {InitialiseClient, AssistMessage} = require("./client/openAiClient");
 const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
 const connectToMongo = require("./documentdb/mongoClient");
+const geminiFlashModel = require("./client/geminiClient");
+const {v4: uuidv4} = require('uuid');
+
 
 router.use(bodyParser.json());
 router.use(cors());
@@ -47,80 +50,105 @@ router.post("/askClaude", async (req, res) => {
 
 router.post("/askGemini", async (req, res) => {
   const {content} = req.body;
-  if (!question) {
+  if (!content) {
     return res.status(400).send("Error: No message").end();
   }
+
   _logger.info("Calling gemini API with question: ", {content});
+  const question = content?.question;
+
   try {
-    const message = await askGemini(question);
-    if (message) {
+    const geminiFlash = geminiFlashModel();
+
+    const startChatParams = {
+      history: content?.history,
+      question: question,
+
+    }
+    const y = await geminiFlash.startChat(startChatParams);
+    if (y) {
+      const message = y.sendMessage(question).then((response) => {
+        console.log(response)
+      });
+      console.log('response message object: ', message.candidates.text);
       const data = {
-        answer: message.content[0].text,
+        answer: text.message,
         thread: message.id
       };
-      console.log('sending response: ', {...data});
       return res.status(200).send(data).end();
     } else {
-      return res.status(400).send(message).end();
+      return res.status(400).send("No Message").end();
     }
   } catch (error) {
     _logger.error(error);
   }
-
-  return res.status(500).send(message).end();
 });
 
 router.post("/askChat", async (req, res) => {
-  _logger.info("Calling /askChat and Request body: ", req.body);
-  try {
-    if (!req.body) {
-      return res.status(400).send("Error: No message").end();
-    }
+    _logger.info("Calling /askChat and Request body: ", req.body);
+    try {
+      if (!req.body) {
+        return res.status(400).send("Error: No message").end();
+      }
 
-    const question = req?.body?.content?.question || null;
-    const history = req?.body?.content?.history || null;
+      const question = req?.body?.content?.question || null;
+      const history = req?.body?.content?.history || null;
 
-    _logger.info('question', {question});
-    /*
-            _logger.info('chat history', {'Answers': [...history.answer]});
-    */
+      _logger.info('question', {question});
+      /*
+              _logger.info('chat history', {'Answers': [...history.answer]});
+      */
 
-    const chatClient = await InitialiseClient();
-    console.log(chatClient)
+      const chatClient = await InitialiseClient();
+      console.log(chatClient)
 
-    if (!question) {
-      return res.status(400).send({Message: `bad request for params ${question}`})
-    }
+      if (!question) {
+        return res.status(400).send({Message: `bad request for params ${question}`})
+      }
 
-    const body = {
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          "role": "user",
-          "content": question
+      const formatted = history.map(item => {
+        return {
+          "role": "assistant",
+          "content": item.answer
         },
-      ],
-      stream: false
-    }
+          {
+            "role": "user",
+            "content": item.question
+          }
+      });
+      _logger.info('formatted: ', {formatted});
 
-    const resp = await chatClient.chat.completions.create(body);
-    console.log(resp)
-    if (resp) {
-      const data = {
-        thread: resp.id,
-        answer: resp.choices[0].message.content
-      };
+      const messages = history && history.length > 1
+        ? formatted
+        : [{role: "user", content: question}];
 
-      return res.status(200).send(data).end();
-    } else {
-      _logger.error('Failed to get response', resp);
-      return res.status(500).send(resp);
+      messages.push({role: "user", content: question});
+      const body = {
+        model: "gpt-4o-mini",
+        messages: messages,
+        stream: false
+      }
+
+      const resp = await chatClient.chat.completions.create(body);
+      console.log(resp)
+      if (resp) {
+        const data = {
+          thread: resp.id,
+          answer: resp.choices[0].message.content
+        };
+
+        return res.status(200).send(data).end();
+      } else {
+        _logger.error('Failed to get response', resp);
+        return res.status(500).send(resp);
+      }
+    } catch
+      (err) {
+      _logger.error("Failed with error: ", {err});
+      return res.status(500).send(err).end();
     }
-  } catch (err) {
-    _logger.error("Failed with error: ", {err});
-    return res.status(500).send(err).end();
   }
-});
+)
 
 router.post("/askAssist", async (req, res) => {
 
@@ -142,7 +170,7 @@ router.post("/askAssist", async (req, res) => {
     const assistClient = await InitialiseClient();
     _logger.info('Assistant client model: ', {'Model': assistClient.model});
 
-    const response = await AssistMessage(question, history,  instructions);
+    const response = await AssistMessage(question, history, instructions);
     _logger.info("Response: ", {response});
     if (response) {
       return res.status(200).send(response).end();
@@ -183,8 +211,12 @@ router.post("/login", async (req, res) => {
     user: null,
     error: null
   };
+
+
+  let sessionResponse = null;
+  const uniqueIdentifier = uuidv4();
   try {
-    const connection = await connectLocalPostgres();
+    const connection = await connectLocalDockerPostgres();
     const query =
       `SELECT *
              FROM public."user"
@@ -192,34 +224,58 @@ router.post("/login", async (req, res) => {
                AND password = '${password}'`;
 
     const user = await connection.query(query);
+    let sessionSql = `INSERT INTO "public".sessions(sessionid, userid, state) VALUES (${uniqueIdentifier}, ${user.userid}, 'active')
+            ON CONFLICT (sessionid) 
+              DO UPDATE SET
+                sessionstart = NOW(),
+                           duration = 0,
+                           sessionstate = $3
+                           RETURNING *;`;
     if (user.rowCount > 0) {
       _logger.info("User found: ", {found: user.rows[0].userid});
+
       const userid = user.rows[0].userid;
       data = {
         userid: userid,
-        user: {...user.rows[0]},
+        user: user.rows[0],
         exists: true,
         error: null
       };
-      return res.status(200).send({data}).end();
+
+
+
+      sessionResponse = await connection.query(sessionSql);
+      _logger.info('Session saved: ', {session: sessionResponse.rows[0]});
+
+      if (sessionResponse.rowCount > 0) {
+        return res.status(204).send({...data}).end();
+      } else {
+        return res.status(500).send('Failed to save session').end();
+      }
     }
 
     _logger.info('Saving new login record...');
-    const sql =
-      `INSERT INTO public."user"(email, password, isloggedin, updateondate)
-             VALUES ('${email}', '${password}', true, CURRENT_TIMESTAMP) RETURNING userid`;
 
-    _logger.info('SQL: ', {sql});
     const loggedIn = await connection.query(sql);
     if (loggedIn.rowCount > 0) {
       _logger.info('User saved', {userInfo: {...loggedIn.rows[0]}});
+      const userid = loggedIn.rows[0].userid;
       data = {
-        userid: user.rows[0].userid,
+        userid: userid,
         user: loggedIn.rows[0],
         exists: false,
         error: null
       };
-      return res.status(201).send({...data}).end();
+
+      _logger.info('Unique identifier for session id: ', {uniqueIdentifier});
+      const sessionResponse = await connection.query(sessionSql);
+
+      if (sessionResponse.rowCount > 0) {
+        _logger.info('Session saved: ', {session: sessionResponse.rows[0]});
+        return res.status(201).send({...data}).end();
+      } else {
+        return res.status(500).send('Failed to save session').end();
+      }
     }
   } catch (err) {
     console.log(err);
@@ -251,15 +307,18 @@ router.get("/getContact/:userid", async (req, res) => {
       _logger.info('Contact found: ', {contact});
       const data = {
         contact: contact,
-        exists: true
+        exists: true,
+        status: 201
       }
-      return res.status(201).send(data).end();
+      return res.status(201).send({...data}).end();
     } else {
       const data = {
-        contact: contact,
-        exists: false
+        contact: response.rows[0],
+        userid: userId,
+        exists: false,
+        status: 204
       }
-      return res.status(204).send(data).end();
+      return res.status(204).send({...data}).end();
     }
   } catch (error) {
     console.log(error);
@@ -291,8 +350,12 @@ router.post("/saveContact", async (req, res) => {
     const response = await connection.query(query, values);
 
     _logger.info('Contact saved: ', {response: response.rows[0]});
+    const contact = {
+      userid: response.rows[0].userid.toString(),
+      contact: response.rows[0]
+    }
 
-    return res.status(201).send(response.rows[0]).end();
+    return res.status(201).send(contact).end();
   } catch (error) {
     console.error(error);
     _logger.error('Error saving contact: ', {error});
@@ -383,6 +446,7 @@ router.post("/saveImageUrl", async (req, res) => {
     return res.status(500).send(err.message).end();
   }
 })
+
 
 router.post("/addEmbedding", async (req, res) => {
   const text = req.body.text;

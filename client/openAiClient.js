@@ -32,37 +32,57 @@ async function AssistMessage(question = '', history = [], instructions = '') {
       console.log('Created assistant with id: ', assistant);
     }
 
+    const messages = history.map((item) => {
+      return [
+        {
+          role: 'assistant',
+          content: item.answer
+        },
+        {
+          role: 'user',
+          content: item.question
+        }
+      ]
+    });
+    console.log('messages: ', messages);
     const openAiThreadId = config.parsed.OPENAI_API_THREAD_ID;
     if (!thread) {
       thread = await openAiClient.beta.threads.retrieve(openAiThreadId, {
-        messages: [{
-          role: 'user',
-          content: question,
-
-        }],
-        tool_resources: {
-          file_search: {
-            vector_store_ids: ["vs_ym2nZJtNBInZxLF6oDUaBXD3"]
+        messages: messages,
+        tool_resources:
+          {
+            file_search: {
+              vector_store_ids: ["vs_ym2nZJtNBInZxLF6oDUaBXD3"]
+            }
           }
-        }
       });
     }
 
     if (!run) {
+      console.log(run);
       run = await openAiClient.beta.threads.runs.create(openAiThreadId, {
-        stream: true,
+        stream: false,
         assistant_id: assistant.id
       });
     } else {
+      console.log(run);
       run = await openAiClient.beta.threads.runs.retrieve(openAiThreadId, run.id, {
-        stream: true,
+        stream: false,
         assistant_id: assistant.id
       });
+      await run.status;
     }
 
-  } catch (err) {
+    const status = await openAiClient.beta.runs.
+    console.log('poll: ', status);
+    if(status.status === 'queued'){
+      console.log('queued..')
+    }else {
+      console.log(status.status);
+    }
+  } catch
+    (err) {
     console.error('error message', err);
-    throw err;
   }
 }
 
