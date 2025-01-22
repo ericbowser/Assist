@@ -43,7 +43,7 @@ function logger() {
         return _logger.getLogger();
     }
     
-    return _logger;
+    return _logger.getLogger();
 }
 
 module.exports = logger;

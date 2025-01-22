@@ -8,10 +8,9 @@ const cors = require('cors');
 const {InitialiseClient, AssistMessage} = require("./client/openAiClient");
 const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
-const connectToMongo = require("./documentdb/mongoClient");
 const geminiFlashModel = require("./client/geminiClient");
+const {alphaSquaredAssets, alphaSquaredStrategies, alphaSquaredHypotheticals} = require("./client/alphaSquaredClient");
 const {v4: uuidv4} = require('uuid');
-
 
 router.use(bodyParser.json());
 router.use(cors());
@@ -30,7 +29,7 @@ router.post("/askClaude", async (req, res) => {
   _logger.info("Calling ask Claude through Anthropic API", {question});
   try {
     message = await askClaude(question);
-    console.log(message)
+    _logger.info('Claude question response', {message});
     if (message) {
       const data = {
         answer: message.content[0].text,
@@ -207,202 +206,27 @@ router.get("/saveDocument", async (req, res) => {
 router.post("/login", async (req, res) => {
   const {email, password} = req.body;
   _logger.info('request body for laser tags: ', {credentials: req.body});
-  let data = {
-    user: null,
-    error: null
-  };
 
-
-  let sessionResponse = null;
-  const uniqueIdentifier = uuidv4();
   try {
-    const connection = await connectLocalDockerPostgres();
-    const query =
-      `SELECT *
-             FROM public."user"
-             WHERE email = '${email}'
-               AND password = '${password}'`;
+    const session = {email, password};
+    const response = await createSession(session);
 
-    const user = await connection.query(query);
-    let sessionSql = `INSERT INTO "public".sessions(sessionid, userid, state) VALUES (${uniqueIdentifier}, ${user.userid}, 'active')
-            ON CONFLICT (sessionid) 
-              DO UPDATE SET
-                sessionstart = NOW(),
-                           duration = 0,
-                           sessionstate = $3
-                           RETURNING *;`;
-    if (user.rowCount > 0) {
-      _logger.info("User found: ", {found: user.rows[0].userid});
-
-      const userid = user.rows[0].userid;
-      data = {
-        userid: userid,
-        user: user.rows[0],
-        exists: true,
-        error: null
-      };
-
-
-
-      sessionResponse = await connection.query(sessionSql);
-      _logger.info('Session saved: ', {session: sessionResponse.rows[0]});
-
-      if (sessionResponse.rowCount > 0) {
-        return res.status(204).send({...data}).end();
-      } else {
-        return res.status(500).send('Failed to save session').end();
-      }
+    const data = {
+      error: null,
+      userid: response.userid,
     }
-
-    _logger.info('Saving new login record...');
-
-    const loggedIn = await connection.query(sql);
-    if (loggedIn.rowCount > 0) {
-      _logger.info('User saved', {userInfo: {...loggedIn.rows[0]}});
-      const userid = loggedIn.rows[0].userid;
-      data = {
-        userid: userid,
-        user: loggedIn.rows[0],
-        exists: false,
-        error: null
-      };
-
-      _logger.info('Unique identifier for session id: ', {uniqueIdentifier});
-      const sessionResponse = await connection.query(sessionSql);
-
-      if (sessionResponse.rowCount > 0) {
-        _logger.info('Session saved: ', {session: sessionResponse.rows[0]});
-        return res.status(201).send({...data}).end();
-      } else {
-        return res.status(500).send('Failed to save session').end();
-      }
+    if (!response.error) {
+      return res.status(200).send({...response.data}).end();
+    } else {
+      return res.status(500).send(response.error).end();
     }
-  } catch (err) {
+  } catch
+    (err) {
     console.log(err);
     return res.status(500).send(err.message).end();
   }
-});
-
-router.get("/getContact/:userid", async (req, res) => {
-  const userid = req.params.userid;
-  _logger.info('user id param', {userid});
-  try {
-    const userId = parseInt(userid);
-    const sql = `SELECT *
-                     FROM public."contact"
-                     WHERE userid = ${userId}`;
-    const connection = await connectLocalPostgres();
-    const response = await connection.query(sql);
-    _logger.info('response', {response});
-    let contact = null;
-    if (response.rowCount > 0) {
-      contact = {
-        userid: response.rows[0].userid.toString(), //response.rows[0].userid,
-        firstname: response.rows[0].firstname,
-        lastname: response.rows[0].lastname,
-        petname: response.rows[0].petname,
-        phone: response.rows[0].phone,
-        address: response.rows[0].address,
-      }
-      _logger.info('Contact found: ', {contact});
-      const data = {
-        contact: contact,
-        exists: true,
-        status: 201
-      }
-      return res.status(201).send({...data}).end();
-    } else {
-      const data = {
-        contact: response.rows[0],
-        userid: userId,
-        exists: false,
-        status: 204
-      }
-      return res.status(204).send({...data}).end();
-    }
-  } catch (error) {
-    console.log(error);
-    _logger.error('Error getting contact: ', {error});
-    return res.status(500).send(error).end();
-  }
-});
-
-router.post("/saveContact", async (req, res) => {
-  const {userid, firstname, lastname, petname, phone, address,} = req.body;
-  _logger.info('request body for save contact: ', {request: req.body});
-
-  try {
-    const connection = await connectLocalPostgres();
-    const query = `
-            INSERT INTO public.contact(firstname, lastname, petname, phone, address, userid)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
-        `;
-
-    const values = [
-      firstname,
-      lastname,
-      petname,
-      phone,
-      address,
-      parseInt(userid)
-    ];
-
-    const response = await connection.query(query, values);
-
-    _logger.info('Contact saved: ', {response: response.rows[0]});
-    const contact = {
-      userid: response.rows[0].userid.toString(),
-      contact: response.rows[0]
-    }
-
-    return res.status(201).send(contact).end();
-  } catch (error) {
-    console.error(error);
-    _logger.error('Error saving contact: ', {error});
-
-    return res.status(500).send(error).end();
-  }
-});
-
-router.post("/updateContact", async (req, res) => {
-  const {userid, firstname, lastname, petname, phone, address,} = req.body;
-  _logger.info('request body for update contact: ', {request: req.body});
-
-  try {
-    const connection = await connectLocalPostgres();
-    const query = `UPDATE public.contact
-                       SET firstname = $1,
-                           lastname  = $2,
-                           petname   = $3,
-                           phone     = $4,
-                           address   = $5
-                       WHERE userid = $6;`;
-
-    const values = [
-      firstname,
-      lastname,
-      petname,
-      phone,
-      address,
-      parseInt(userid)
-    ];
-
-    const response = await connection.query(query, values);
-    _logger.info('Contact updated: ', {response});
-    if (response.rowCount > 0) {
-      _logger.info('Contact updated: ', {contactUpdated: response.rowCount});
-      return res.status(200).send({contactUpdated: true}).end();
-    } else {
-      return res.status(200).send({contactUpdated: false}).end();
-    }
-  } catch (error) {
-    console.error(error);
-    _logger.error('Error saving contact: ', {error});
-
-    return res.status(500).send(error).end();
-  }
-});
-
+})
+;
 
 router.post("/stripePayment", async (req, res) => {
   try {
@@ -437,7 +261,7 @@ router.post("/saveImageUrl", async (req, res) => {
     }
     const connection = await connectLocalPostgres();
     const sql = `INSERT INTO public.images(imageurl, prompt)
-                     VALUES ('${imageUrl}', '${prompt}')`;
+                 VALUES ('${imageUrl}', '${prompt}')`;
     const response = await connection.query(sql);
 
     return res.status(200).send(response).end();
@@ -489,17 +313,28 @@ router.get("/getEmbedding", async (req, res) => {
 })
 
 router.post('/sendEmail', async (req, res) => {
-  const {from, subject, message} = req.body;
+  const {from, recipient, subject, message} = req.body;
 
   try {
     _logger.info("Sending email: ", {from, subject, message})
-    const messageId = await sendEmailWithAttachment(from, subject, message)
+    const messageId = await sendEmailWithAttachment(from, recipient, subject, message)
     _logger.info("Email sent with message id: ", {messageId})
     if (messageId) {
       res.status(200).send('Email Sent!').end();
     } else {
       res.status(500).send('Error').end();
     }
+  } catch (error) {
+    _logger.error('Error sending email: ', {error});
+    res.status(500).json({message: 'Failed to send email.'});
+  }
+});
+
+router.get('/alphastrategies', async (req, res) => {
+  try {
+    const response  = await alphaSquaredStrategies();
+    _logger.info('Alpha Squared Strategies: ', {response});
+    return res.status(200).send(response).end();
   } catch (error) {
     _logger.error('Error sending email: ', {error});
     res.status(500).json({message: 'Failed to send email.'});

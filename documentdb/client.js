@@ -20,9 +20,9 @@ async function connectLocalPostgres() {
 				connectionString: connectionString,
 				ssl: false
 			});
+			await client.connect();
 		}
 
-		await client.connect();
 		return client;
 	} catch (e) {
 		console.log(e);
@@ -32,20 +32,26 @@ async function connectLocalPostgres() {
 }
 async function connectLocalDockerPostgres() {
 	try {
+		if (!client) {
+			client = new Client({
+				connectionString: connectionString,
+				ssl: false
+			});
+		}
+
 		const pool = new Pool({
 			user: 'postgres',
-			host: 'host.docker.internal',
+			host: '127.0.0.1',
+			password: '1006',
 			database: 'postgres',
 			port: 5432
 		});
+		client.pool = pool;
 		console.log('pool: ', pool);
 
-		await pool.connect();
-		return pool;
+		return client;
 	} catch (e) {
 		console.log(e);
-	} finally {
-		await pool.end();
 	}
 }
 

@@ -1,6 +1,9 @@
 ﻿const {OpenAI} = require("openai");
 const config = require('dotenv').config();
 
+const logger = require('../assistLog.js');
+const _logger = logger();
+
 let openAiClient = null;
 let run = null;
 let assistant = null;
@@ -45,6 +48,12 @@ async function AssistMessage(question = '', history = [], instructions = '') {
       ]
     });
     console.log('messages: ', messages);
+    const x = {
+      role: 'user',
+      content: question
+    }
+    messages.push(x);
+    _logger.info('Total messages in history: ', {'message Count': messages.length});
     const openAiThreadId = config.parsed.OPENAI_API_THREAD_ID;
     if (!thread) {
       thread = await openAiClient.beta.threads.retrieve(openAiThreadId, {
@@ -64,6 +73,23 @@ async function AssistMessage(question = '', history = [], instructions = '') {
         stream: false,
         assistant_id: assistant.id
       });
+      const x = await openAiClient.runs.createAndPoll(thread.id, {
+        assistant_id: assistant.id,
+        messages: [
+          {
+            role: 'user',
+            content: question
+          }
+        ]
+      })
+/*
+      const response = await run.content.messages.(thread.id, {
+        additional_messages: messages,
+        assistant_id: assistant.id,
+        thread_id: thread.id
+      });
+*/
+      _logger.info('response: ', {run});
     } else {
       console.log(run);
       run = await openAiClient.beta.threads.runs.retrieve(openAiThreadId, run.id, {
@@ -72,10 +98,23 @@ async function AssistMessage(question = '', history = [], instructions = '') {
       });
       await run.status;
     }
+    _logger.info('run: ', {run});
+    await run.createAndPoll({
+      assistant_id: assistant.id,
+      messages: [
+        {
+          role: 'user',
+          content: question
+        }
+      ]
+    });
 
-    const status = await openAiClient.beta.runs.
-    console.log('poll: ', status);
+    while (run.status === 'queued') {
+      console.log('waiting for run to complete..');
+      run.status;
+    }
     if(status.status === 'queued'){
+
       console.log('queued..')
     }else {
       console.log(status.status);
