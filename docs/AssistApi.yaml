@@ -69,23 +69,3 @@ paths:
           required: true
           schema:
             type: string
-  /login:
-    post:
-      summary: Login LaserTags
-      description: Login
-      responses:
-        '200':
-          description: Successfully logged in
-          content:
-            application/json:
-              schema:
-                type: object
-        '400':
-          description: bad request
-      parameters:
-        - name: user
-          in: header
-          description: user credentials
-          required: true
-          schema:
-            type: object

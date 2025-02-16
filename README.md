@@ -1,17 +1,18 @@
-## Assist Node.js Back-end
-API for personal assistant using openai
+   # Assist
 
-## This is the back-end to this repo: https://github.com/ericbowser/AssistFront
+## This is the front-end to this repo: 
+   - https://github.com/ericbowser/AssistFront
+## This is the back-end to this repo:
+  - https://github.com/ericbowser/Assist
 
-# Front-end using React.js, Webpack, Boostrap, and Axios for API requests
-  - Simple interface for `openai` API: https://www.npmjs.com/package/openai
+   1. Completion and Code Extraction 
+      * sudo memory with history
+      * readonly question log  
 
-## This API takes chat completion requests and image generation requests for right now
-1. Completion and Code Extraction
-2. Image generation
-3. Embeddings and documents
-    - Use postgreSQL for storing a thread conversation
-    - Save the embedding tokens for future access or just threads
-5. Agents or swarm APIs (not sure yet)
+   2. Image generation
+      * OpenAI
+
+   3. Previous messages sent to openai simulating history
+
 
 
