@@ -9,8 +9,6 @@ let thread = null;
 function InitialiseClient() {
   if (!openAiClient) {
     openAiClient = new OpenAI({
-      version: "v2",
-      model: "gpt-4o-mini",
       project: config.parsed.OPENAI_PROJECT_ID,
       apiKey: config.parsed.OPENAI_API_KEY,
       organization: config.parsed.OPENAI_ORG,
@@ -50,14 +48,15 @@ async function AssistMessage(question = '', history = [], instructions = '') {
 
     if (!run) {
       run = await openAiClient.beta.threads.runs.create(openAiThreadId, {
-        stream: true,
+        stream: false,
         assistant_id: assistant.id
       });
     } else {
-      run = await openAiClient.beta.threads.runs.retrieve(openAiThreadId, run.id, {
-        stream: true,
-        assistant_id: assistant.id
-      });
+      run = await openAiClient.beta.threads.runs
+        .retrieve(openAiThreadId, run.id)
+        .then(result => console.log(result))
+        .catch(err => console.log(err));
+      console.log('current run: ', run);
     }
 
   } catch (err) {

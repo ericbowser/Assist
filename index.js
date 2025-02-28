@@ -20,16 +20,16 @@ const httpServer = http.createServer(app);
 
 let options = {
 	definition: {
-		schemes: ['http'],
+		schemes: ['http', 'https'],
 		openapi: "3.0.0",
 		info: {
 			title: "E.R.B Assist API",
 			version: "1.0.0",
-			description: "My personal assistant using ChatGPT",
+			description: "My personal assistant using various APIs and LLMs",
 			contact: {
 				name: "API Support",
-				url: "",
-				email: "ericryanbowser@gmail.com",
+				url: "http://localhost:32636/swagger",
+				email: "laser@new-collar.space",
 			},
 		},
 		servers: [
