@@ -11,6 +11,7 @@ function InitialiseClient() {
     openAiClient = new OpenAI({
       project: config.parsed.OPENAI_PROJECT_ID,
       apiKey: config.parsed.OPENAI_API_KEY,
+      model: config.parsed.OPENAI_API_REASONING_MODEL,
       organization: config.parsed.OPENAI_ORG,
       maxRetries: 3,
       verbose: true,

@@ -214,7 +214,7 @@ router.post("/askAssist", async (req, res) => {
     assistClient.models[0] = process.env.DEEPSEEK_REASON_MODEL;
     _logger.info('Assistant client model: ', {'Model': assistClient.model});
 
-    const response = await AssistMessage(question, history,  instructions);
+    const response = await AssistMessage(question, history, instructions);
     _logger.info("Response: ", {response});
     if (response) {
       return res.status(200).send(response).end();
@@ -288,7 +288,7 @@ router.post("/saveImageUrl", async (req, res) => {
     }
     const connection = await connectLocalPostgres();
     const sql = `INSERT INTO public.images(imageurl, prompt)
-                     VALUES ('${imageUrl}', '${prompt}')`;
+                 VALUES ('${imageUrl}', '${prompt}')`;
     const response = await connection.query(sql);
 
     return res.status(200).send(response).end();
@@ -308,24 +308,23 @@ router.post('/generateImageDallE', async (req, res) => {
       prompt: content.question,
       model: process.env.OPENAI_API_IMAGE_MODEL,
       n: 1,
-      size: '1024x1792',
+      size: '1792x1024',
       response_format: 'url',
-      style: 'natural',
+      style: 'vivid',
       quality: 'hd',
       user: 'ericbo_ai_81'
     };
-    const imageUrl = await client.images.generate(params);
-    _logger.info("Image response from OpenAI", {imageUrl})
-    const image = imageUrl.data[0].url;
-    _logger.log('images', image);
-    if (image) {
-      const data = {
-        thread: 'images_no_thread',
-        answer: imageUrl
-      }
-      res.status(200).send(data).end();
+    const imageData = await client.images.generate(params);
+    const data = {
+      created: imageData.created,
+      imageUrl: imageData.data[0].url,
+      thread: imageData._request_id,
+    }
+    _logger.info("Image response from OpenAI", {data})
+    if (data) {
+      res.status(200).send({...data}).end();
     } else {
-      return res.status(500).send('Error generating image');
+      return res.status(500).send({'Error': 'Error generating image'});
     }
   } catch (error) {
     console.error('Error generating image:', error);
