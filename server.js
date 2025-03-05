@@ -105,7 +105,11 @@ router.post("/askDeepSeek", async (req, res) => {
   }
   _logger.info("Calling DeepSeek API with question: ", {content});
   try {
-    const data = await deepSeekChat(content.question);
+    const response = await deepSeekChat(content.question);
+    const data = {
+      answer: response.choices[0].message.content,
+      thread: response.id
+    }
     if (data) {
       return res.status(200).send(data).end();
     } else {
