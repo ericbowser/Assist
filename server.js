@@ -106,8 +106,14 @@ router.post("/askDeepSeek", async (req, res) => {
   _logger.info("Calling DeepSeek API with question: ", {content});
   try {
     const response = await deepSeekChat(content.question);
+    const currentMessage = response?.choices[0]?.message?.content;
+    if (!currentMessage) {
+      _logger.error('message is not defined as expected', {currentMessage});
+      return res.status(400).send(currentMessage).end();
+    }
+    _logger.info("Calling DeepSeek API form image: ", {content: currentMessage});
     const data = {
-      answer: response.choices[0].message.content,
+      answer: currentMessage,
       thread: response.id
     }
     if (data) {
@@ -128,7 +134,7 @@ router.post("/deepSeekImage", async (req, res) => {
   }
   _logger.info("Calling DeepSeek API form image: ", {content});
   try {
-    const data = await deepSeekImage(content.question);
+    const response = await deepSeekImage(content.question);
     if (data) {
       return res.status(200).send(data).end();
     } else {
