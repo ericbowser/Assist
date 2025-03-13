@@ -2,7 +2,7 @@
 const axios = require('axios');
 
 // Deepseek Text Generation Endpoint
-async function deepSeekChat(prompt = '', max_tokens = ) {
+async function deepSeekChat(prompt = '', max_tokens = 1000) {
   try {
     const response = await axios.post(
       'https://api.deepseek.com/v1/chat/completions', // Verify endpoint from docs

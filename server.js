@@ -7,11 +7,8 @@ const axios = require('axios');
 const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
 const getExchanges = require('./api/ccxtApi');
-/*
-const createCustomer = require('./api/stripe');
-*/
 const cors = require('cors');
-const {InitialiseClient, AssistMessage} = require("./client/openAiClient");
+const {InitialiseClient, AssistMessage, AssistImage} = require("./client/openAiClient");
 const {deepSeekChat, deepSeekImage} = require("./client/deepSeekClient");
 const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
@@ -313,23 +310,7 @@ router.post('/generateImageDallE', async (req, res) => {
   _logger.info('generate image', {content});
 
   try {
-    const client = await InitialiseClient();
-    const params = {
-      prompt: content.question,
-      model: process.env.OPENAI_API_IMAGE_MODEL,
-      n: 1,
-      size: '1792x1024',
-      response_format: 'url',
-      style: 'vivid',
-      quality: 'hd',
-      user: 'ericbo_ai_81'
-    };
-    const imageData = await client.images.generate(params);
-    const data = {
-      created: imageData.created,
-      imageUrl: imageData.data[0].url,
-      thread: imageData._request_id,
-    }
+    const data = await AssistImage(content.question, content.size, content.model);
     _logger.info("Image response from OpenAI", {data})
     if (data) {
       res.status(200).send({...data}).end();

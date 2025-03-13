@@ -1,5 +1,5 @@
 const log4js = require('log4js');
-const jsonLayout = require('log4js-json-layout').layout;
+const jsonLayout = require('log4js-json-layout');
 
 let _logger = null;
 
@@ -43,7 +43,7 @@ function logger() {
         return _logger.getLogger();
     }
     
-    return _logger;
+    return _logger.getLogger();
 }
 
 module.exports = logger;

@@ -3,6 +3,10 @@ const dotenv = require("dotenv");
 const config = dotenv.config({path: Path.resolve(__dirname, '.env')});
 const server = require('./server');
 const http = require("node:http");
+const logger = require("./assistLog");
+
+let _logger = logger();
+_logger.info("Logger Initialized");
 
 const swaggerJsdoc = require('swagger-jsdoc');
 const express = require("express");
