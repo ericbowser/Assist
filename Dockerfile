@@ -17,12 +17,10 @@ COPY package*.json ./app/
 
 ENV NODE_ENV production
 
-RUN npm install dotenv
-RUN npm install dotenv-vault
-RUN npm install nodemon -g
-RUN npm install
 COPY . .
-
+RUN npm install
+RUN npm install dotenv -g
+RUN npm install nodemon -g
 RUN npx dotenv-vault@latest pull
 
 EXPOSE 32636
