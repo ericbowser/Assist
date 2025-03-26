@@ -1,29 +1,27 @@
 # syntax=docker/dockerfile:1
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
+# Use the official Node.js image as the base image
+ARG NODE_VERSION=22.14.0
+FROM node:${NODE_VERSION}-slim AS base
 
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
+# Set the working directory
+WORKDIR /
 
-ARG NODE_VERSION=20.17.0
+# Copy package.json and package-lock.json for dependency installation
+COPY package*.json ./
 
-FROM node:${NODE_VERSION}-alpine
+# Install dependencies using npm ci for a clean and deterministic install
+RUN --mount=type=cache,target=/root/.npm npm ci --production
 
-ENV NODE_ENV=production
-
-WORKDIR /app
-COPY package*.json ./app/
-
-ENV NODE_ENV production
-
+# Copy the application source code
 COPY . .
-RUN npm install
-RUN npm install dotenv -g
-RUN npm install nodemon -g
-RUN npx dotenv-vault@latest pull
+RUN npm install dotenv nodemon -g
 
+# Expose the application port
 EXPOSE 32636
 
-# Run the application.
-CMD npm run dev
+# Set the environment variable for production
+ENV NODE_ENV=production
+
+# Define the command to run the application
+CMD ["npm", "run", "dev"]

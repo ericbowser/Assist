@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "docker build -t ericbowser/assist .",
-    "start": "docker run ericbowser/assist",
-    "run": "docker run -p 32636:32636 ericbowser/assist",
+    "run": "docker run -p 32636:32636 ericbowser/assist:latest",
     "serve": "npm run serve",
     "dev": "nodemon index.js",
     "clean": "rm -R node_modules && rm package-lock.json && npm install"
@@ -14,12 +13,12 @@
   "author": "Eric Ryan Bowser - E.R.B.",
   "license": "ISC",
   "dependencies": {
-    "@alpacahq/alpaca-trade-api": "^1.4.2",
-    "@anthropic-ai/sdk": "^0.26.1",
+    "@anthropic-ai/sdk": "^0.39.0",
     "@binance/connector": "^3.3.0",
     "@google-cloud/local-auth": "^2.1.0",
     "@google-cloud/vertexai": "^1.9.0",
     "@google/generative-ai": "^0.21.0",
+    "@oclif/plugin-warn-if-update-available": "^3.1.38",
     "@pinecone-database/pinecone": "^1.1.2",
     "axios": "^1.7.9",
     "binance": "^2.10.4",
@@ -29,6 +28,7 @@
     "express": "^4.21.1",
     "express-router": "^0.0.1",
     "jsonwebtoken": "^9.0.2",
+    "lodash.template": "^4.5.0",
     "log4js": "^6.9.1",
     "log4js-json-layout": "^2.2.3",
     "mongodb": "6.9",
@@ -44,8 +44,11 @@
     "wss": "^0.0.2"
   },
   "devDependencies": {
-    "dotencr": "^1.0.3",
-    "dotenv": "^16.3.1",
+    "dotenv-vault": "^1.26.2",
+    "@oclif/core": "^3.26.4",
+    "@oclif/plugin-help": "^6.0.21",
+    "@oclif/plugin-plugins": "^5.0.14",
+    "oclif": "^4.8.8",
     "nodemon": "^3.1.9",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"

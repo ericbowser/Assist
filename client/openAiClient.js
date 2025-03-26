@@ -1,6 +1,7 @@
 ﻿const {OpenAI} = require("openai");
 const config = require('dotenv').config();
 const logger = require('../assistLog');
+const ImageModel = require('../helpers/Types');
 
 let _logger = logger();
 
@@ -35,20 +36,19 @@ async function AssistImage(question = '', size = '', model = '') {
     const params = {
       prompt: question,
       model: model,
-      n: 1,
+      n: 5,
       size: size,
       response_format: 'b64_json',
-      style: model === 'dall-e-3' ? 'vivid' : 'natural',
-      quality: model === 'dall-e-3' ? 'hd' : 'standard',
-      user: 'ericbo_ai_81'
+      style: 'natural',
+      quality: model === ImageModel.Dalle_3 ? 'hd' : 'standard',
+      user: 'erbows_less__69'
     };
     const imageData = await openAiClient.images.generate(params, {timeout: 60000});
     _logger.info('Generated image for: ', {params, revised_prompt: imageData.data[0].revised_prompt});
-    _logger.info('Image data: ', {data: imageData.data[0]});
     
     const data = {
       created: imageData.created,
-      b64_json: imageData.data[0].b64_json,
+      b64_json: imageData.data,
       thread: imageData._request_id,
     }
 

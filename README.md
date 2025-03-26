@@ -1,17 +1,38 @@
-## Assist Node.js Back-end
-API for personal assistant using openai
+## Running the Project with Docker
 
-## This is the back-end to this repo: https://github.com/ericbowser/AssistFront
+To run this project using Docker, follow the steps below:
 
-# Front-end using React.js, Webpack, Boostrap, and Axios for API requests
-  - Simple interface for `openai` API: https://www.npmjs.com/package/openai
+### Prerequisites
 
-## This API takes chat completion requests and image generation requests for right now
-1. Completion and Code Extraction
-2. Image generation
-3. Embeddings and documents
-    - Use postgreSQL for storing a thread conversation
-    - Save the embedding tokens for future access or just threads
-5. Agents or swarm APIs (not sure yet)
+- Ensure Docker and Docker Compose are installed on your system.
+- Verify that the required Node.js version is set to `22.14.0` as specified in the Dockerfile.
 
+### Environment Variables
 
+- The application uses environment variables defined in the `.env` file. Uncomment the `env_file` line in the `docker-compose.yaml` file to enable this.
+
+### Build and Run Instructions
+
+1. Build the Docker images and start the services:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+2. Access the application at `http://localhost:32636`.
+
+### Service Configuration
+
+- **App Service**:
+  - Exposes port `32636`.
+  - Depends on the `database` service.
+- **Database Service**:
+  - Uses the `postgres:latest` image.
+  - Stores data in the `db_data` volume.
+
+### Notes
+
+- Ensure the `db_data` volume is properly configured for persistent database storage.
+- Modify the `POSTGRES_USER` and `POSTGRES_PASSWORD` environment variables in the `docker-compose.yaml` file as needed for your setup.
+
+By following these instructions, you can successfully run the project using Docker.

@@ -12,7 +12,7 @@ const {InitialiseClient, AssistMessage, AssistImage} = require("./client/openAiC
 const {deepSeekChat, deepSeekImage} = require("./client/deepSeekClient");
 const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
-const connectToMongo = require("./documentdb/mongoClient");
+const ImageModel = require('./helpers/Types');
 
 router.use(bodyParser.json());
 router.use(cors());
@@ -44,22 +44,18 @@ router.get("/getTransactions", async (req, res) => {
 });
 
 router.post("/askClaude", async (req, res) => {
-  let message = '';
+  const {content} = req.body;
   if (!req.body) {
     return res.status(400).send("Error: No message").end();
   }
-  const question = req.body?.content.question || null;
-  _logger.info("Calling ask Claude through Anthropic API", {question});
+  _logger.info("Calling ask Claude through Anthropic API", {content});
+  
   try {
-    message = await askClaude(question);
-    console.log(message)
+    const message = await askClaude(content);
+    _logger.info("Updated history: ", {message});
+    
     if (message) {
-      const data = {
-        answer: message.content[0].text,
-        thread: message.id
-      };
-      console.log('sending response: ', {...data});
-      return res.status(200).send(data).end();
+      return res.status(200).send(message).end();
     } else {
       return res.status(400).send(message).end();
     }
@@ -234,26 +230,6 @@ router.post("/askAssist", async (req, res) => {
   }
 });
 
-router.get("/saveDocument", async (req, res) => {
-  const {document} = req.body;
-  _logger.info("passed document to save:", document);
-
-  try {
-    /* if (!document) {
-         return res.status(400).send("Error: No document to save").end();
-     }*/
-
-    const movie = await connectToMongo();
-    _logger.info("Mongo Client connected and test db movie: ", {movie});
-
-    return res.status(200).send({movie}).end();
-
-  } catch (err) {
-    _logger.error("Failed with error: ", {err});
-    return res.status(500).send(err).end();
-  }
-});
-
 async function retry(queueThread = () => {
 }) {
   const promise = new Promise((resolve, reject) => {
@@ -270,14 +246,19 @@ async function retry(queueThread = () => {
   });
 }
 
-router.post("/fetchImageUrls", async (req, res) => {
+router.post("/fetchPrompts", async (req, res) => {
   try {
-    const {imageUrl, prompt} = req.body;
-    if (!imageUrl) {
+    const {promptCategory} = req.body;
+    if (!promptCategory) {
       return res.status(400).send({error: 'bad request'}).end();
     }
     const connection = await connectLocalPostgres();
-    const sql = 'SELECT imageurl FROM public.images;';
+    const sql = 
+      `SELECT prompt FROM public.prompt p
+        INNER JOIN public.promptcategory pc 
+            ON pc.id = p.categoryid
+        WHERE pc.category = '${promptCategory}'`;
+      
     const response = await connection.query(sql);
 
     return res.status(200).send(response).end();
@@ -287,15 +268,17 @@ router.post("/fetchImageUrls", async (req, res) => {
   }
 })
 
-router.post("/saveImageUrl", async (req, res) => {
+router.post("/savePrompt", async (req, res) => {
   try {
-    const {imageUrl, prompt} = req.body;
-    if (!imageUrl) {
+    const {category, prompt, description = ''} = req.body;
+    _logger.info('Save prompt params: ', {category, prompt, description});
+    if (!prompt) {
       return res.status(400).send({error: 'bad request'}).end();
     }
     const connection = await connectLocalPostgres();
-    const sql = `INSERT INTO public.images(imageurl, prompt)
-                 VALUES ('${imageUrl}', '${prompt}')`;
+    const sql = 
+      `INSERT INTO public.prompt(prompt)
+            VALUES ('${prompt}', '${prompt}')`;
     const response = await connection.query(sql);
 
     return res.status(200).send(response).end();
@@ -311,7 +294,6 @@ router.post('/generateImageDallE', async (req, res) => {
 
   try {
     const data = await AssistImage(content.question, content.size, content.model);
-    _logger.info("Image response from OpenAI", {data})
     if (data) {
       res.status(200).send({...data}).end();
     } else {
