@@ -39,8 +39,6 @@ async function AssistImage(question = '', size = '', model = '') {
       n: model === ImageModel.Dalle_3 ? 1 : 4,
       size: size,
       response_format: 'b64_json',
-      style: 'natural',
-      quality: model === ImageModel.Dalle_3 ? 'hd' : 'standard',
       user: 'erbows_less__69'
     };
     const imageData = await openAiClient.images.generate(params, {timeout: 60000});
@@ -49,7 +47,7 @@ async function AssistImage(question = '', size = '', model = '') {
     const data = {
       created: imageData.created,
       b64_json: imageData.data,
-      thread: imageData._request_id,
+      thread: imageData.created.toString(),
     }
 
     return data;
