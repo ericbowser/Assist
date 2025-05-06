@@ -42,3 +42,6 @@ assist.log
 # Exclude specific files
 !Dockerfile
 !compose.yaml
+.flaskenv*
+!.env.project
+!.env.vault

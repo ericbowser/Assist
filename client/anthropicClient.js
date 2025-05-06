@@ -1,12 +1,11 @@
-const {Anthropic} = require('@anthropic-ai/sdk');
-const config = require('dotenv').config();
+const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../assistLog');
 
 let _logger = logger();
 let _client = null;
 let _thread = null;
 
-async function askClaude(content = [{}]) {
+async function askClaude(prompts = []) {
   try {
     if (!_client) {
       _client = await getAnthropicClient();
@@ -14,26 +13,32 @@ async function askClaude(content = [{}]) {
       _logger.info('Already initialized client for Claude..');
     }
 
-    _logger.info("Messages for Claude:  ", {});
+    _logger.info("Messages for Claude:  ", {prompts});
 
     // Make request with messages array
+    console.log(process.env.CLAUDE_MODEL)
     const response = await _client.messages.create({
-      model: config.parsed.CLAUDE_MODEL,
-      system: "You are a helpful assistant who helps with business and development questions.",
-      messages: content,
-      max_tokens: 4096
+      stream: false,
+      model: process.env.CLAUDE_MODEL,
+      temperature: 0,
+      messages: prompts,
+      max_tokens: 1000,
     });
-    
+
+
     // Return response and updated history
     return {
       response,
       thread: response.id,
       answer: response.content[0].text,
       updatedHistory: [
-        ...content,
+        ...prompts,
         {role: "assistant", content: response.content[0].text}
       ]
-    };
+    }
+
+
+
   } catch (error) {
     _logger.error('Error calling Claude:', {error});
     throw error;
@@ -44,8 +49,8 @@ function getAnthropicClient() {
   try {
     if (!_client) {
       _client = new Anthropic({
-        baseURL: config.parsed.CLAUDE_MESSAGES_URL,
-        apiKey: config.parsed.ANTHROPIC_API_KEY,
+        baseURL: process.env.CLAUDE_MESSAGES_URL,
+        apiKey: process.env.CLAUDE_AI_KEY,
       });
     }
 
@@ -57,4 +62,3 @@ function getAnthropicClient() {
 }
 
 module.exports = askClaude;
-

@@ -36,7 +36,7 @@ async function AssistImage(question = '', size = '', model = '') {
     const params = {
       prompt: question,
       model: model,
-      n: 5,
+      n: model === ImageModel.Dalle_3 ? 1 : 4,
       size: size,
       response_format: 'b64_json',
       style: 'natural',

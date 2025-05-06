@@ -13,6 +13,7 @@ const {deepSeekChat, deepSeekImage} = require("./client/deepSeekClient");
 const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
 const ImageModel = require('./helpers/Types');
+const {GenerateFromTextInput} = require('./client/geminiClient');
 
 router.use(bodyParser.json());
 router.use(cors());
@@ -67,13 +68,13 @@ router.post("/askClaude", async (req, res) => {
 });
 
 router.post("/askGemini", async (req, res) => {
-  const {question} = req.body;
-  if (!question) {
+  const {content} = req.body;
+  if (!content) {
     return res.status(400).send("Error: No message").end();
   }
-  _logger.info("Calling gemini API with question: ", {question});
+  _logger.info("Calling gemini API with question: ", {content});
   try {
-    const message = await askClaude(question);
+    const message = await GenerateFromTextInput(content);
     if (message) {
       const data = {
         answer: message.content[0].text,
@@ -86,9 +87,8 @@ router.post("/askGemini", async (req, res) => {
     }
   } catch (error) {
     _logger.error(error);
+    return res.status(500).send(error).end();
   }
-
-  return res.status(500).send(message).end();
 });
 
 router.post("/askDeepSeek", async (req, res) => {
@@ -145,35 +145,28 @@ router.get("/ccxt", async (req, res) => {
 })
 
 router.post("/askChat", async (req, res) => {
-  _logger.info("Calling /askChat and Request body: ", req.body);
+  const {content} = req.body;
   try {
     if (!req.body) {
       return res.status(400).send("Error: No message").end();
     }
 
-    const question = req?.body?.content?.question || null;
-    const history = req?.body?.content?.history || null;
-
-    _logger.info('question', {question});
-    /*
-            _logger.info('chat history', {'Answers': [...history.answer]});
-    */
-
     const chatClient = await InitialiseClient();
-    console.log(chatClient)
 
-    if (!question) {
+    if (content?.length < 1) {
       return res.status(400).send({Message: `bad request for params ${question}`})
     }
 
+    // Validate each message in the content array
+    for (const message of content) {
+      if (!message.role || !message.content || typeof message.content !== 'string') {
+        return res.status(400).send({ error: "Invalid message format. Each message must have a 'role' and a 'content' string." }).end();
+      }
+    }
+    
     const body = {
       model: "gpt-4o-mini",
-      messages: [
-        {
-          "role": "user",
-          "content": question
-        },
-      ],
+      messages: content,
       stream: false
     }
 
@@ -295,7 +288,11 @@ router.post('/generateImageDallE', async (req, res) => {
   try {
     const data = await AssistImage(content.question, content.size, content.model);
     if (data) {
-      res.status(200).send({...data}).end();
+      if (data.b64_json.length > 1) {
+        res.status(200).send({multiple: true, ...data}).end();
+      } else {
+        res.status(200).send({...data}).end();
+      }
     } else {
       return res.status(500).send({'Error': 'Error generating image'});
     }

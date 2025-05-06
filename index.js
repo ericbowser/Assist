@@ -6,7 +6,6 @@ const http = require("node:http");
 const logger = require("./assistLog");
 
 let _logger = logger();
-_logger.info("Logger Initialized");
 
 const swaggerJsdoc = require('swagger-jsdoc');
 const express = require("express");
@@ -45,6 +44,8 @@ let options = {
 	},
 	apis: ['./docs/AssistApi.yaml'],
 }
+
+_logger.info("server options: ", {options});
 const specs = swaggerJsdoc(options);
 app.use("/swagger", serve, setup(specs));
 httpServer.listen(httpPort, () => console.log(`Listening on port ${httpPort}`));
