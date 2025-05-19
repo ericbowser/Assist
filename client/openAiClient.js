@@ -36,17 +36,18 @@ async function AssistImage(question = '', size = '', model = '') {
     const params = {
       prompt: question,
       model: model,
-      n: model === ImageModel.Dalle_3 ? 1 : 4,
+      n: 1,
       size: size,
-      response_format: 'b64_json',
+      response_format: 'url',
+      quality: 'standard',
       user: 'erbows_less__69'
     };
     const imageData = await openAiClient.images.generate(params, {timeout: 60000});
     _logger.info('Generated image for: ', {params, revised_prompt: imageData.data[0].revised_prompt});
     
     const data = {
+      answer: imageData.data[0].url,
       created: imageData.created,
-      b64_json: imageData.data,
       thread: imageData.created.toString(),
     }
 

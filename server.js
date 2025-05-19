@@ -50,11 +50,11 @@ router.post("/askClaude", async (req, res) => {
     return res.status(400).send("Error: No message").end();
   }
   _logger.info("Calling ask Claude through Anthropic API", {content});
-  
+
   try {
     const message = await askClaude(content);
     _logger.info("Updated history: ", {message});
-    
+
     if (message) {
       return res.status(200).send(message).end();
     } else {
@@ -160,10 +160,10 @@ router.post("/askChat", async (req, res) => {
     // Validate each message in the content array
     for (const message of content) {
       if (!message.role || !message.content || typeof message.content !== 'string') {
-        return res.status(400).send({ error: "Invalid message format. Each message must have a 'role' and a 'content' string." }).end();
+        return res.status(400).send({error: "Invalid message format. Each message must have a 'role' and a 'content' string."}).end();
       }
     }
-    
+
     const body = {
       model: "gpt-4o-mini",
       messages: content,
@@ -246,12 +246,13 @@ router.post("/fetchPrompts", async (req, res) => {
       return res.status(400).send({error: 'bad request'}).end();
     }
     const connection = await connectLocalPostgres();
-    const sql = 
-      `SELECT prompt FROM public.prompt p
-        INNER JOIN public.promptcategory pc 
-            ON pc.id = p.categoryid
-        WHERE pc.category = '${promptCategory}'`;
-      
+    const sql =
+      `SELECT prompt
+       FROM public.prompt p
+                INNER JOIN public.promptcategory pc
+                           ON pc.id = p.categoryid
+       WHERE pc.category = '${promptCategory}'`;
+
     const response = await connection.query(sql);
 
     return res.status(200).send(response).end();
@@ -269,9 +270,9 @@ router.post("/savePrompt", async (req, res) => {
       return res.status(400).send({error: 'bad request'}).end();
     }
     const connection = await connectLocalPostgres();
-    const sql = 
+    const sql =
       `INSERT INTO public.prompt(prompt)
-            VALUES ('${prompt}', '${prompt}')`;
+       VALUES ('${prompt}', '${prompt}')`;
     const response = await connection.query(sql);
 
     return res.status(200).send(response).end();
@@ -287,12 +288,8 @@ router.post('/generateImageDallE', async (req, res) => {
 
   try {
     const data = await AssistImage(content.question, content.size, content.model);
-    if (data) {
-      if (data.b64_json.length > 1) {
-        res.status(200).send({multiple: true, ...data}).end();
-      } else {
-        res.status(200).send({...data}).end();
-      }
+    if (data.answer) {
+      res.status(200).send({...data}).end();
     } else {
       return res.status(500).send({'Error': 'Error generating image'});
     }
