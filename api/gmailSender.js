@@ -5,8 +5,9 @@ const USER_EMAIL = 'laser@new-collar.space';
 const GMAIL_API_VERSION = 'v1';
 const { google } = require('googleapis');
 const { GoogleAuth } = require('google-auth-library');
+AIzaSyBEkiaGEeJk_DbOYZd1QUY32Judg-C0bIE
 const auth = new GoogleAuth({
-    keyFile: KEY_FILE_PATH,
+    apiKey: 'AIzaSyBEkiaGEeJk_DbOYZd1QUY32Judg-C0bIE',
     scopes: ['https://mail.google.com/'],
 });
 async function sendEmailWithAttachment(from, subject, message) {
@@ -23,8 +24,8 @@ async function sendEmailWithAttachment(from, subject, message) {
     // });
 
     // Send the email
-    const response = await gmail.users.messages.send({
-        userId: 'me', // 'me' refers to the authenticated user
+    const response = await gmail.users.messages.send({userId: 'ericryanbowser@gmail.com'}, 
+      {
         requestBody: {
             raw: rawMessage,
         },

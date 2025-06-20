@@ -4,9 +4,8 @@ const {addEmbedding, getEmbedding} = require('./Embeddings');
 const {connectLocalPostgres} = require('./documentdb/client');
 const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
-const sendEmailWithAttachment = require('./api/gmailSender');
+// const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
-const getExchanges = require('./api/ccxtApi');
 const cors = require('cors');
 const {InitialiseClient, AssistMessage, AssistImage} = require("./client/openAiClient");
 const {deepSeekChat, deepSeekImage} = require("./client/deepSeekClient");
@@ -14,6 +13,7 @@ const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
 const ImageModel = require('./helpers/Types');
 const {GenerateFromTextInput} = require('./client/geminiClient');
+const sendMail = require('./api/sendGridMail');
 
 router.use(bodyParser.json());
 router.use(cors());
@@ -138,11 +138,6 @@ router.post("/deepSeekImage", async (req, res) => {
     throw error;
   }
 });
-
-router.get("/ccxt", async (req, res) => {
-  const exchanges = await getExchanges();
-  return res.status(200).send({exchanges: exchanges}).end();
-})
 
 router.post("/askChat", async (req, res) => {
   const {content} = req.body;
@@ -339,22 +334,36 @@ router.get("/getEmbedding", async (req, res) => {
   }
 })
 
-router.post('/sendEmail', async (req, res) => {
-  const {from, subject, message} = req.body;
+// router.post('/sendEmail', async (req, res) => {
+//   const {from, subject, message} = req.body;
+//
+//   try {
+//     _logger.info("Sending email: ", {from, subject, message})
+//     const messageId = await sendEmailWithAttachment(from, subject, message)
+//     _logger.info("Email sent with message id: ", {messageId})
+//     if (messageId) {
+//       res.status(200).send('Email Sent!').end();
+//     } else {
+//       res.status(500).send('Error').end();
+//     }
+//   } catch (error) {
+//     _logger.error('Error sending email: ', {error});
+//     res.status(500).json({message: 'Failed to send email.'});
+//   }
+// });
 
+router.post('/sendEmail', async (req, res) => {
+  const {name, email, message} = req.body;
   try {
-    _logger.info("Sending email: ", {from, subject, message})
-    const messageId = await sendEmailWithAttachment(from, subject, message)
-    _logger.info("Email sent with message id: ", {messageId})
-    if (messageId) {
-      res.status(200).send('Email Sent!').end();
+    // Get API key from your database
+    const response = await sendMail();
+    if (!response) {
+      return res.status(500).json({error: 'Send failed'});
     } else {
-      res.status(500).send('Error').end();
+      res.json({success: true});
     }
   } catch (error) {
-    _logger.error('Error sending email: ', {error});
-    res.status(500).json({message: 'Failed to send email.'});
+    res.status(500).json({error: 'Send failed'});
   }
 });
-
 module.exports = router;

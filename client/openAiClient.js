@@ -30,18 +30,42 @@ function InitialiseClient() {
 
 async function AssistImage(question = '', size = '', model = '') {
   try {
+    let params = {  
+      user: 'erbows_more_96'
+    };
     if (!openAiClient) {
       openAiClient = InitialiseClient();
     }
-    const params = {
-      prompt: question,
-      model: model,
-      n: 1,
-      size: size,
-      response_format: 'url',
-      quality: 'standard',
-      user: 'erbows_less__69'
-    };
+    if (model === 'dall-e-2') {
+      params = {
+        ...params,
+        prompt: question,
+        model: 'dall-e-2',
+        n: 5,
+        size: size,
+        response_format: 'url'
+      }
+    } else if(model === 'dall-e-3') {
+      params = {
+        ...params,
+        prompt: question,
+        model: model,
+        n: 1,
+        size: size,
+        response_format: 'url',
+        style: 'vivid',
+        quality: 'hd'
+      }
+    } else {
+      params = {
+        ...params,
+        prompt: question,
+        model: model,
+        n: 1,
+        size: size,
+        response_format: 'url'
+      };
+    }
     const imageData = await openAiClient.images.generate(params, {timeout: 60000});
     _logger.info('Generated image for: ', {params, revised_prompt: imageData.data[0].revised_prompt});
     
