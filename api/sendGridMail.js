@@ -1,7 +1,5 @@
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey('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')
-// sgMail.setDataResidency('eu'); 
-// uncomment the above line if you are sending mail using a regional EU subuser
+sgMail.setApiKey(process.env.SEND_GRID_MAIL);
 
 async function sendMail(to = '', from = 'laser@new-collar.space', subject = '', text = '', html = null) {
  try {
