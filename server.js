@@ -13,7 +13,7 @@ const askClaude = require("./client/anthropicClient");
 const bodyParser = require('body-parser');
 const ImageModel = require('./helpers/Types');
 const {GenerateFromTextInput} = require('./client/geminiClient');
-const sendMail = require('./api/sendGridMail');
+const {sendEmailWithAttachment} = require('./api/gmailSender');
 
 router.use(bodyParser.json());
 router.use(cors());
@@ -334,36 +334,22 @@ router.get("/getEmbedding", async (req, res) => {
   }
 })
 
-// router.post('/sendEmail', async (req, res) => {
-//   const {from, subject, message} = req.body;
-//
-//   try {
-//     _logger.info("Sending email: ", {from, subject, message})
-//     const messageId = await sendEmailWithAttachment(from, subject, message)
-//     _logger.info("Email sent with message id: ", {messageId})
-//     if (messageId) {
-//       res.status(200).send('Email Sent!').end();
-//     } else {
-//       res.status(500).send('Error').end();
-//     }
-//   } catch (error) {
-//     _logger.error('Error sending email: ', {error});
-//     res.status(500).json({message: 'Failed to send email.'});
-//   }
-// });
-
 router.post('/sendEmail', async (req, res) => {
-  const {name, email, message} = req.body;
+  const {name, email, subject, message} = req.body;
+
   try {
-    // Get API key from your database
-    const response = await sendMail();
-    if (!response) {
-      return res.status(500).json({error: 'Send failed'});
+    _logger.info("Sending email: ", {name, email, subject, message});
+    const messageId = await sendEmailWithAttachment(name, email, subject, message);
+    _logger.info("Email sent with message id: ", {messageId})
+    if (messageId) {
+      res.status(200).send('Email Sent!').end();
     } else {
-      res.json({success: true});
+      res.status(500).send('Error').end();
     }
   } catch (error) {
-    res.status(500).json({error: 'Send failed'});
+    _logger.error('Error sending email: ', {error});
+    res.status(500).json({message: 'Failed to send email.'});
   }
 });
+
 module.exports = router;
