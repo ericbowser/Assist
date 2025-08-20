@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci --production
 
 # Copy the application source code
 COPY . .
-RUN npm install dotenv nodemon -g
+RUN npm install nodemon -g
 
 # Expose the application port
 EXPOSE 32636
