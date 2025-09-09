@@ -1,6 +1,4 @@
 const Stripe = require('stripe');
-const dotenv = require('dotenv').config();
-const stripe = new Stripe(dotenv.parsed.STRIPE_TEST_API_KEY);
 
 const createCustomer = async () => {
     const customer = await stripe.customers.create({

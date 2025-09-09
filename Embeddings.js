@@ -1,5 +1,4 @@
-﻿const config = require('dotenv').config();
-const openAiClient = require('./client/openAiClient')
+﻿const openAiClient = require('./client/openAiClient')
 
 async function getEmbedding(text) {
 	console.log('embedding vectors: ', text);

@@ -1,5 +1,5 @@
 ﻿const nodemailer = require('nodemailer');
-const config = require('dotenv').config();
+const config = require('../env.json');
 
 const sendEmailWithAttachment = async (from, to, subject, message) => {
   const transporter = await nodemailer.createTransport({
@@ -9,7 +9,7 @@ const sendEmailWithAttachment = async (from, to, subject, message) => {
     secure: true,
     auth: {
       user: 'ericryanbowser@gmail.com',
-      pass: config.parsed.GMAIL_APP_PASSWORD,
+      pass: config.GMAIL_APP_PASSWORD,
     },
   });
   const info = await transporter.sendMail({

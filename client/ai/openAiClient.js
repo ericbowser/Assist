@@ -1,5 +1,4 @@
 ﻿const {OpenAI} = require("openai");
-const config = require('dotenv').config();
 const logger = require('../assistLog');
 const ImageModel = require('../helpers/Types');
 

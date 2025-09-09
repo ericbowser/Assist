@@ -1,9 +1,8 @@
 const Path = require('path');
-const dotenv = require("dotenv");
-const config = dotenv.config({path: Path.resolve(__dirname, '.env')});
 const server = require('./server');
 const http = require("node:http");
 const logger = require("./assistLog");
+const config = require('./env.json');
 
 let _logger = logger();
 
@@ -11,7 +10,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const express = require("express");
 const {serve, setup} = require("swagger-ui-express");
 
-const httpPort =  process.env.PORT || 3003;
+const httpPort =  config.PORT || 3003;
 console.log('passed port to use for http', httpPort);
 
 const app = express();

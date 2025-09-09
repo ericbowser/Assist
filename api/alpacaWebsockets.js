@@ -1,8 +1,5 @@
 ﻿const WebSocket = require('ws');
 const Path = require("path");
-const dotenv = require('dotenv');
-const config = dotenv.config({path: Path.resolve('../', '.env')});
-console.log(dotenv)
 console.log('Alpaca Sandbox URL: ', process.env.ALPACA_WEB_SOCKET_SANDBOX_URL);
 
 const webSockeyApiKey = process.env.ALPACA_PAPER_API_KEY;
