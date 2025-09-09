@@ -43,3 +43,5 @@ auth/
 .run/*
 /assist.log
 sendgrid.env
+
+assist.log
