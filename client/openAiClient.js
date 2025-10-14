@@ -1,6 +1,7 @@
 ﻿const {OpenAI} = require("openai");
 const logger = require('../assistLog');
 const ImageModel = require('../helpers/Types');
+const {OPENAI_ORG, OPENAI_PROJECT_ID, OPENAI_API_KEY, OPENAI_REASONING_MODEL} = require('../env.json');
 
 let _logger = logger();
 
@@ -12,10 +13,10 @@ let thread = null;
 function InitialiseClient() {
   if (!openAiClient) {
     openAiClient = new OpenAI({
-      project: config.parsed.OPENAI_PROJECT_ID,
-      apiKey: config.parsed.OPENAI_API_KEY,
-      model: config.parsed.OPENAI_REASONING_MODEL,
-      organization: config.parsed.OPENAI_ORG,
+      project: OPENAI_PROJECT_ID,
+      apiKey: OPENAI_API_KEY,
+      model: OPENAI_REASONING_MODEL,
+      organization: OPENAI_ORG,
       maxRetries: 3,
       verbose: true,
       max_tokens: 1000,

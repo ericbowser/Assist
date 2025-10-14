@@ -44,4 +44,4 @@ auth/
 /assist.log
 sendgrid.env
 
-assist.log
+env.json

@@ -2,11 +2,9 @@ const express = require('express');
 const router = express.Router();
 const {addEmbedding, getEmbedding} = require('./Embeddings');
 const {connectLocalPostgres} = require('./documentdb/client');
-const {getAccount} = require('./api/binanceSpotApi');
 const axios = require('axios');
 // const sendEmailWithAttachment = require('./api/gmailSender');
 const getLogger = require('./assistLog');
-const cors = require('cors');
 const {InitialiseClient, AssistMessage, AssistImage} = require("./client/openAiClient");
 const {deepSeekChat, deepSeekImage} = require("./client/deepSeekClient");
 const askClaude = require("./client/anthropicClient");
@@ -16,7 +14,6 @@ const {GenerateFromTextInput} = require('./client/geminiClient');
 const {sendEmailWithAttachment} = require('./api/gmailSender');
 
 router.use(bodyParser.json());
-router.use(cors());
 router.use(express.json());
 router.use(express.urlencoded({extended: true}));
 
@@ -24,16 +21,6 @@ let _logger = getLogger();
 _logger.info("Logger Initialized")
 
 let assistClient = null;
-
-router.get("/getBinanceAssets", async (req, res) => {
-  try {
-    const account = getAccount();
-    return res.status(200).send(account).end();
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send(err).end();
-  }
-});
 
 router.get("/getTransactions", async (req, res) => {
   try {
@@ -50,9 +37,13 @@ router.post("/askClaude", async (req, res) => {
     return res.status(400).send("Error: No message").end();
   }
   _logger.info("Calling ask Claude through Anthropic API", {content});
+  let messages = [];
+  content.forEach(x => {
+    messages.push(x.content);
+  })
 
   try {
-    const message = await askClaude(content);
+    const message = await askClaude(messages);
     _logger.info("Updated history: ", {message});
 
     if (message) {

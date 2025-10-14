@@ -1,31 +1,26 @@
 ﻿const {Client} = require('pg');
-const path = require('path');
-const config = require('../env.json');
+const logger = require('../assistLog');
+const {DB_USER, DB_PASSWORD, DB_HOST, DB_PORT} = require('../env.json');
 
-// Change .env based on local dev or prod
-const env = path.resolve(__dirname, '.env');
-const options = {
-	path: env
-};
-
-const connectionString =
-	`postgres://${config.DB_USER}:${config.DB_PASSWORD}@${config.DB_SERVER}:${config.DB_PORT}/postgres`;
-
+let _logger = logger();
 async function connectLocalPostgres() {
 	let client = null;
 	try {
 		client = new Client({
-			connectionString: connectionString,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      port: DB_PORT,
+      host: DB_HOST,
 			ssl: false
 		});
 
 		await client.connect();
+    _logger.info("Connected to: ", {client});
 		return client;
 	} catch (e) {
-		console.log(e);
+		_logger.info("Error connecting to postgres: ", {e});
+    throw e;
 	}
-
-	return client;
 }
 
 module.exports = {connectLocalPostgres};
