@@ -36,6 +36,3 @@ CREATE TABLE IF NOT EXISTS public."user"
 ALTER TABLE IF EXISTS public."user"
     OWNER to postgres;
 
-INSERT INTO public."user"(
-    username, password, firstname, lastname, petname, phone, address, city, state)
-VALUES ('ericbo', 'test123', 'eric', 'bowser', 'bunker', '4354948030', '5154 S 5200 W', 'Kearns', 'UT');
