@@ -1,0 +1,47 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# Version control
+.git/
+.gitignore
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation
+*.md
+README*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build outputs
+dist/
+build/
+out/
+
+# Docker files
+Dockerfile*
+docker-compose*
+
+# Project-specific
+.codiumai/
+assist.log
+
+# Exclude specific files
+!Dockerfile
+!compose.yaml
+.flaskenv*
+!.env.project
+!.env.vault

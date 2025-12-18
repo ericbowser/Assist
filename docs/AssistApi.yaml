@@ -1,0 +1,91 @@
+﻿openapi: 3.0.0
+servers:
+  - description: Assist General API
+    url: http://localhost:32636
+info:
+  description: Node.js Assistant API with Vectors
+  version: 1.0.0
+  license: {name: MIT}
+  title: Node Assist API
+  contact: {name: Eric}
+paths:
+  /saveDocument:
+    get:
+      summary: Save Document
+      description: Save a document to the database
+      responses:
+        '200':
+          description: Document saved
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: bad request
+      parameters:
+        - name: document
+          in: header
+          description: Document to save
+          required: true
+          schema:
+            type: object
+  /askAssist:
+    post:
+      summary: Text Question
+      description: Ask model (assistant enabled)
+      responses:
+        '200':
+          description: Returns an answer
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: bad request
+      parameters:
+        - name: question
+          description: Question to ask Assistant
+          required: true
+          schema:
+            type: string
+          in: header
+  /askChat:
+    post:
+      summary: Text Question
+      description: Ask model (non-assistant a question)
+      responses:
+        '200':
+          description: Returns an answer
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: bad request
+      parameters:
+        - name: question
+          in: header
+          description: Question to ask
+          required: true
+          schema:
+            type: string
+  /login:
+    post:
+      summary: Login LaserTags
+      description: Login
+      responses:
+        '200':
+          description: Successfully logged in
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: bad request
+      parameters:
+        - name: user
+          in: header
+          description: user credentials
+          required: true
+          schema:
+            type: object
