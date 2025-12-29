@@ -11,8 +11,10 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const express = require("express");
 const {serve, setup} = require("swagger-ui-express");
 
-const httpPort =  PORT || 3003;
-console.log('passed port to use for http', httpPort);
+const httpPort = PORT || 3003;
+const httpHost = HOST || '0.0.0.0'; // Listen on all interfaces
+
+console.log(`Server will listen on ${httpHost}:${httpPort}`);
 
 const app = express();
 app.use(cors());
@@ -49,4 +51,9 @@ let options = {
 _logger.info("server options: ", {options});
 const specs = swaggerJsdoc(options);
 app.use("/swagger", serve, setup(specs));
-httpServer.listen(httpPort, () => console.log(`Listening on port ${httpPort}`));
+
+// Listen on specified host and port
+httpServer.listen(httpPort, httpHost, () => {
+    console.log(`✅ Server listening on http://${httpHost}:${httpPort}`);
+    console.log(`📚 API Documentation: http://localhost:${httpPort}/swagger`);
+});

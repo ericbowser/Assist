@@ -83,7 +83,9 @@ router.post("/askGemini", async (req, res) => {
 });
 
 router.post("/askDeepSeek", async (req, res) => {
-  const {content} = req.body;
+  const {role, content, thread} = req.body.content[0];
+  _logger.info("Calling seek seek");
+  _logger.info("role, content, and thread", role, content, thread);
   if (!content) {
     return res.status(400).send("Error: No message").end();
   }

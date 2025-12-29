@@ -47,7 +47,9 @@ function getAnthropicClient() {
   try {
     if (!_client) {
       _client = new Anthropic({
-        apiKey: CLAUDE_API_KEY
+        apiKey: process.env.CLAUDE_API_KEY,
+        baseUrl: CLAUDE_MESSAGES_URL,
+        
       });
     }
 
