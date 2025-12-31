@@ -3,7 +3,7 @@ const server = require('./server');
 const http = require("node:http");
 const cors = require('cors');
 const logger = require("./assistLog");
-const {PORT, HOST} = require('./env.json');
+const {PORT, HOST} = require('dotenv').config().parsed;
 
 let _logger = logger();
 

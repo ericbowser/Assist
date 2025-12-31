@@ -1,6 +1,6 @@
 ﻿const {Client} = require('pg');
 const logger = require('../assistLog');
-const {DB_USER, DB_PASSWORD, DB_HOST, DB_PORT} = require('../env.json');
+const {DB_USER, DB_PASSWORD, DB_HOST, DB_PORT} = require('dotenv').config().parsed;
 
 let _logger = logger();
 async function connectLocalPostgres() {

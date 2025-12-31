@@ -1,5 +1,3 @@
-const {VertexAI, HarmBlockThreshold, HarmCategory} = require('@google-cloud/vertexai');
-
 const project = 'google-cloud';
 const location = 'us-west3';
 const textModel = 'gemini-1.0-pro';

@@ -1,7 +1,7 @@
 ﻿const {OpenAI} = require("openai");
 const logger = require('../assistLog');
 const ImageModel = require('../helpers/Types');
-const {OPENAI_ORG, OPENAI_PROJECT_ID, OPENAI_API_KEY, OPENAI_REASONING_MODEL} = require('../env.json');
+const {OPENAI_ORG, OPENAI_PROJECT_ID, OPENAI_API_KEY, OPENAI_REASONING_MODEL} = require('dotenv').config().parsed;
 
 let _logger = logger();
 

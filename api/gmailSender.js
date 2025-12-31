@@ -1,5 +1,5 @@
 ﻿const nodemailer = require('nodemailer');
-const config = require('../env.json');
+const config = require('dotenv').config();
 
 const sendEmailWithAttachment = async (from, to, subject, message) => {
   const transporter = await nodemailer.createTransport({

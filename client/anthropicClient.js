@@ -1,6 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../assistLog');
-const {CLAUDE_MODEL, CLAUDE_API_KEY, CLAUDE_MESSAGES_URL} = require('../env.json');
+const {CLAUDE_MODEL, CLAUDE_API_KEY, CLAUDE_MESSAGES_URL} = require('dotenv').config().parsed;
 
 let _logger = logger();
 let _client = null;
