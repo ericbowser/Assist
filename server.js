@@ -173,7 +173,7 @@ router.post("/askChat", async (req, res) => {
     }
   } catch (err) {
     _logger.error("Failed with error: ", {err});
-    return res.status(500).send(err).end();
+    return res.status(500).send({error: "Internal server error"}).end();
   }
 });
 
@@ -207,7 +207,7 @@ router.post("/askAssist", async (req, res) => {
     return res.status(500).send({error: "Thread failed to run"}).end();
   } catch (err) {
     _logger.error("Failed with error: ", {err});
-    return res.status(500).send(err).end();
+    return res.status(500).send({error: "Internal server error"}).end();
   }
 });
 
