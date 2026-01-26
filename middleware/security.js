@@ -2,6 +2,7 @@
 
 const rateLimit = require('express-rate-limit');
 const logger = require('../assistLog');
+const crypto = require('crypto');
 
 const _logger = logger();
 
@@ -97,10 +98,11 @@ const authenticateApiKey = (req, res, next) => {
     const validApiKeys = process.env.VALID_API_KEYS?.split(',') || [];
     
     if (!validApiKeys.includes(apiKey)) {
+        const apiKeyHash = crypto.createHash('sha256').update(apiKey).digest('hex').substring(0, 8);
         _logger.warn('Invalid API key', { 
             ip: req.ip, 
             path: req.path,
-            keyPrefix: apiKey.substring(0, 8)
+            apiKeyHash
         });
         return res.status(403).json({
             error: 'Invalid API key',
