@@ -186,7 +186,7 @@ router.post("/askChat", async (req, res) => {
     }
   } catch (err) {
     _logger.error("Failed with error: ", {err});
-    return res.status(500).send(err).end();
+    return res.status(500).send({error: "Internal server error"}).end();
   }
 });
 
@@ -220,7 +220,7 @@ router.post("/askAssist", async (req, res) => {
     return res.status(500).send({error: "Thread failed to run"}).end();
   } catch (err) {
     _logger.error("Failed with error: ", {err});
-    return res.status(500).send(err).end();
+    return res.status(500).send({error: "Internal server error"}).end();
   }
 });
 
@@ -253,9 +253,9 @@ router.post("/fetchPrompts", async (req, res) => {
        FROM public.prompt p
                 INNER JOIN public.promptcategory pc
                            ON pc.id = p.categoryid
-       WHERE pc.category = '${promptCategory}'`;
+       WHERE pc.category = $1`;
 
-    const response = await connection.query(sql);
+    const response = await connection.query(sql, [promptCategory]);
     _logger.info('fetchPrompts success', { rows: response?.rows?.length });
     return res.status(200).send(response).end();
   } catch (err) {
@@ -274,8 +274,8 @@ router.post("/savePrompt", async (req, res) => {
     const connection = await connectLocalPostgres();
     const sql =
       `INSERT INTO public.prompt(prompt)
-       VALUES ('${prompt}', '${prompt}')`;
-    const response = await connection.query(sql);
+       VALUES ($1, $2)`;
+    const response = await connection.query(sql, [prompt, prompt]);
     _logger.info('savePrompt success');
     return res.status(200).send(response).end();
   } catch (err) {
