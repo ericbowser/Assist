@@ -46,3 +46,4 @@ sendgrid.env
 
 env.json
 ssl/
+/images

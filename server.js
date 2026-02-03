@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs').promises;
 const {addEmbedding, getEmbedding} = require('./Embeddings');
 const {connectLocalPostgres} = require('./documentdb/client');
 const axios = require('axios');
@@ -12,22 +14,30 @@ const bodyParser = require('body-parser');
 const ImageModel = require('./helpers/Types');
 const {GenerateFromTextInput} = require('./client/geminiClient');
 const {sendEmailWithAttachment} = require('./api/gmailSender');
+const { textToImage: hfTextToImage, textToImageFlux: hfTextToImageFlux, textToImageFlux2Turbo: hfTextToImageFlux2Turbo } = require('./client/huggingFaceClient');
 
 router.use(bodyParser.json());
 router.use(express.json());
 router.use(express.urlencoded({extended: true}));
 
 let _logger = getLogger();
-_logger.info("Logger Initialized")
+_logger.info("Logger Initialized");
+
+const IMAGES_DIR = path.join(__dirname, 'images');
+fs.mkdir(IMAGES_DIR, { recursive: true }).catch((err) => _logger.error('images dir', err));
+router.use('/images', express.static(IMAGES_DIR));
 
 let assistClient = null;
 
 router.get("/getTransactions", async (req, res) => {
+  _logger.info('getTransactions requested');
   try {
     const response = await axios.post(process.env.ALPACA_BASE_URL2);
+    _logger.info('getTransactions success', { dataLength: response?.data?.length });
     return res.status(200).send(response.data).end();
   } catch (err) {
-    console.error(err);
+    _logger.error('getTransactions error', err);
+    return res.status(500).send(err).end();
   }
 });
 
@@ -71,7 +81,7 @@ router.post("/askGemini", async (req, res) => {
         answer: message.content[0].text,
         thread: message.id
       };
-      console.log('sending response: ', {...data});
+      _logger.info('askGemini response', data);
       return res.status(200).send(data).end();
     } else {
       return res.status(400).send(message).end();
@@ -118,22 +128,25 @@ router.post("/deepSeekImage", async (req, res) => {
   if (!content) {
     return res.status(400).send("Error: No message").end();
   }
-  _logger.info("Calling DeepSeek API form image: ", {content});
+  _logger.info("deepSeekImage requested", { content });
   try {
     const response = await deepSeekImage(content.question);
+    const data = response?.data ?? response;
     if (data) {
+      _logger.info("deepSeekImage success");
       return res.status(200).send(data).end();
     } else {
-      return res.status(400).send({error: 'bad request'}).end();
+      return res.status(400).send({ error: 'bad request' }).end();
     }
   } catch (error) {
-    _logger.error(error);
-    throw error;
+    _logger.error('deepSeekImage error', error);
+    return res.status(500).send(error).end();
   }
 });
 
 router.post("/askChat", async (req, res) => {
   const {content} = req.body;
+  _logger.info('askChat requested', { contentLength: content?.length });
   try {
     if (!req.body) {
       return res.status(400).send("Error: No message").end();
@@ -159,7 +172,7 @@ router.post("/askChat", async (req, res) => {
     }
 
     const resp = await chatClient.chat.completions.create(body);
-    console.log(resp)
+    _logger.info('askChat response', { thread: resp?.id });
     if (resp) {
       const data = {
         thread: resp.id,
@@ -228,10 +241,11 @@ async function retry(queueThread = () => {
 }
 
 router.post("/fetchPrompts", async (req, res) => {
+  const { promptCategory } = req.body;
+  _logger.info('fetchPrompts requested', { promptCategory });
   try {
-    const {promptCategory} = req.body;
     if (!promptCategory) {
-      return res.status(400).send({error: 'bad request'}).end();
+      return res.status(400).send({ error: 'bad request' }).end();
     }
     const connection = await connectLocalPostgres();
     const sql =
@@ -242,10 +256,10 @@ router.post("/fetchPrompts", async (req, res) => {
        WHERE pc.category = '${promptCategory}'`;
 
     const response = await connection.query(sql);
-
+    _logger.info('fetchPrompts success', { rows: response?.rows?.length });
     return res.status(200).send(response).end();
   } catch (err) {
-    console.log(err);
+    _logger.error('fetchPrompts error', err);
     return res.status(500).send(err.message).end();
   }
 })
@@ -262,10 +276,10 @@ router.post("/savePrompt", async (req, res) => {
       `INSERT INTO public.prompt(prompt)
        VALUES ('${prompt}', '${prompt}')`;
     const response = await connection.query(sql);
-
+    _logger.info('savePrompt success');
     return res.status(200).send(response).end();
   } catch (err) {
-    console.log(err);
+    _logger.error('savePrompt error', err);
     return res.status(500).send(err.message).end();
   }
 })
@@ -282,50 +296,85 @@ router.post('/generateImageDallE', async (req, res) => {
       return res.status(500).send({'Error': 'Error generating image'});
     }
   } catch (error) {
-    console.error('Error generating image:', error);
+    _logger.error('generateImageDallE error', error);
     res.status(500).send('Error generating image');
   }
 });
 
-router.post("/addEmbedding", async (req, res) => {
-  const text = req.body.text;
-
-  let json = {};
-  let addedEmbedding;
-  if (text) {
-    addedEmbedding = await addEmbedding(text);
-  } else {
-    json = {
-      error: `Failed to add embedding ${text}`
-    }
-    return res.status(500).send(json).end();
+router.post('/textToImage', async (req, res) => {
+  const messages = Array.isArray(req.body) ? req.body : req.body?.content;
+  const prompt = messages?.[0]?.content ?? req.body?.question ?? req.body?.prompt;
+  const parameters = { num_inference_steps: 8, width: 1024, height: 1024, ...(req.body?.parameters ?? {}) };
+  if (!prompt) {
+    return res.status(400).send({ error: 'Missing prompt (e.g. messages[0].content)' }).end();
   }
-
-  if (addedEmbedding) {
-    json = JSON.parse(addedEmbedding);
-  } else {
-    json = {
-      error: `Failed to add embedding ${text}`
-    }
+  if (!process.env.HF_TOKEN) {
+    return res.status(500).send({ error: 'HF_TOKEN not configured' }).end();
   }
-
-  return res.status(200).send(json).end();
-})
-
-router.get("/getEmbedding", async (req, res) => {
-  const request = req.body;
-
-  const embedding = await getEmbedding(request);
-  if (embedding) {
-    const parsed = JSON.parse(embedding);
-    return res.status(200).send(parsed).end();
-  } else {
-    const errorMessage = {
-      error: "failed to get embedding"
-    }
-    return res.status(500).send(errorMessage).end();
+  _logger.info('textToImage requested', { prompt: prompt?.slice(0, 80), parameters });
+  try {
+    const image = await hfTextToImage(prompt, parameters);
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const filename = `textToImage-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.png`;
+    await fs.writeFile(path.join(IMAGES_DIR, filename), buffer).catch((err) => _logger.error('save image', err));
+    _logger.info('textToImage success', { filename, size: buffer.length });
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.status(200).json({ url: `${baseUrl}/images/${filename}`, filename }).end();
+  } catch (error) {
+    _logger.error('textToImage error', error);
+    res.status(500).send({ error: error?.message ?? 'Error generating image' }).end();
   }
-})
+});
+
+router.post('/fluxImage', async (req, res) => {
+  const messages = Array.isArray(req.body) ? req.body : req.body?.content;
+  const prompt = messages?.[0]?.content ?? req.body?.question ?? req.body?.prompt;
+  const parameters = { num_inference_steps: 5, width: 1024, height: 1024, ...(req.body?.parameters ?? {}) };
+  if (!prompt) {
+    return res.status(400).send({ error: 'Missing prompt (e.g. messages[0].content)' }).end();
+  }
+  if (!process.env.HF_TOKEN) {
+    return res.status(500).send({ error: 'HF_TOKEN not configured' }).end();
+  }
+  _logger.info('fluxImage requested', { prompt: prompt?.slice(0, 80), parameters });
+  try {
+    const image = await hfTextToImageFlux(prompt, parameters);
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const filename = `fluxImage-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.png`;
+    await fs.writeFile(path.join(IMAGES_DIR, filename), buffer).catch((err) => _logger.error('save image', err));
+    _logger.info('fluxImage success', { filename, size: buffer.length });
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.status(200).json({ url: `${baseUrl}/images/${filename}`, filename }).end();
+  } catch (error) {
+    _logger.error('fluxImage error', error);
+    res.status(500).send({ error: error?.message ?? 'Error generating image' }).end();
+  }
+});
+
+router.post('/flux2TurboImage', async (req, res) => {
+  const messages = Array.isArray(req.body) ? req.body : req.body?.content;
+  const prompt = messages?.[0]?.content ?? req.body?.question ?? req.body?.prompt;
+  const parameters = { num_inference_steps: 5, width: 1024, height: 1024, ...(req.body?.parameters ?? {}) };
+  if (!prompt) {
+    return res.status(400).send({ error: 'Missing prompt (e.g. messages[0].content)' }).end();
+  }
+  if (!process.env.HF_TOKEN) {
+    return res.status(500).send({ error: 'HF_TOKEN not configured' }).end();
+  }
+  _logger.info('flux2TurboImage requested', { prompt: prompt?.slice(0, 80), parameters });
+  try {
+    const image = await hfTextToImageFlux2Turbo(prompt, parameters);
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const filename = `flux2TurboImage-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.png`;
+    await fs.writeFile(path.join(IMAGES_DIR, filename), buffer).catch((err) => _logger.error('save image', err));
+    _logger.info('flux2TurboImage success', { filename, size: buffer.length });
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.status(200).json({ url: `${baseUrl}/images/${filename}`, filename }).end();
+  } catch (error) {
+    _logger.error('flux2TurboImage error', error);
+    res.status(500).send({ error: error?.message ?? 'Error generating image' }).end();
+  }
+});
 
 router.post('/sendEmail', async (req, res) => {
   const {name, email, subject, message} = req.body;
