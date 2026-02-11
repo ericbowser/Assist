@@ -29,6 +29,69 @@ router.use('/images', express.static(IMAGES_DIR));
 
 let assistClient = null;
 
+// Simple ping endpoint
+router.get("/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
+// Health check endpoint
+router.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Connection status endpoint for frontend
+router.get("/api/status", (req, res) => {
+  _logger.info('Connection status check requested');
+  res.status(200).json({
+    connected: true,
+    backend: "Assist API",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      openai: !!process.env.OPENAI_API_KEY,
+      anthropic: !!process.env.ANTHROPIC_API_KEY,
+      deepseek: !!process.env.DEEPSEEK_API_KEY,
+      gemini: !!process.env.GEMINI_API_KEY,
+      huggingface: !!process.env.HF_TOKEN,
+      database: !!process.env.DATABASE_URL
+    }
+  });
+});
+
+// API information endpoint
+router.get("/api/info", (req, res) => {
+  res.status(200).json({
+    name: "E.R.B Assist API",
+    version: "1.0.0",
+    description: "Personal assistant using various APIs and LLMs",
+    endpoints: [
+      { path: "/health", method: "GET", description: "Health check" },
+      { path: "/api/status", method: "GET", description: "Connection status" },
+      { path: "/api/info", method: "GET", description: "API information" },
+      { path: "/askClaude", method: "POST", description: "Claude AI chat" },
+      { path: "/askGemini", method: "POST", description: "Gemini AI chat" },
+      { path: "/askDeepSeek", method: "POST", description: "DeepSeek AI chat" },
+      { path: "/askChat", method: "POST", description: "OpenAI chat" },
+      { path: "/askAssist", method: "POST", description: "Assistant with history" },
+      { path: "/generateImageDallE", method: "POST", description: "Generate image with DALL-E" },
+      { path: "/textToImage", method: "POST", description: "Generate image with Hugging Face" },
+      { path: "/fluxImage", method: "POST", description: "Generate image with Flux" },
+      { path: "/flux2TurboImage", method: "POST", description: "Generate image with Flux 2 Turbo" },
+      { path: "/deepSeekImage", method: "POST", description: "Generate image with DeepSeek" },
+      { path: "/sendEmail", method: "POST", description: "Send email" },
+      { path: "/fetchPrompts", method: "POST", description: "Fetch prompts by category" },
+      { path: "/savePrompt", method: "POST", description: "Save a new prompt" },
+      { path: "/getExamQuestions", method: "GET", description: "Get exam questions" },
+      { path: "/getTransactions", method: "GET", description: "Get transactions" }
+    ]
+  });
+});
+
 router.get("/getTransactions", async (req, res) => {
   _logger.info('getTransactions requested');
   try {
