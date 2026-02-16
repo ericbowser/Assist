@@ -1,4 +1,3 @@
-const Path = require('path');
 const server = require('./server');
 const http = require("node:http");
 const cors = require('cors');

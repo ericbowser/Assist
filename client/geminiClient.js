@@ -1,3 +1,4 @@
+const { VertexAI, HarmCategory, HarmBlockThreshold } = require('@google-cloud/vertexai');
 
 const project = 'google-cloud';
 const location = 'us-west3';

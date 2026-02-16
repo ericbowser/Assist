@@ -1,7 +1,7 @@
-﻿const {OpenAI} = require("openai");
+﻿const config = require('dotenv').config();
+const {OpenAI} = require("openai");
 const logger = require('../assistLog');
-const ImageModel = require('../helpers/Types');
-const {OPENAI_ORG, OPENAI_PROJECT_ID, OPENAI_API_KEY, OPENAI_REASONING_MODEL} = require('dotenv').config().parsed;
+const {OPENAI_ORG, OPENAI_PROJECT_ID, OPENAI_API_KEY, OPENAI_REASONING_MODEL} = config.parsed || {};
 
 let _logger = logger();
 
@@ -77,7 +77,7 @@ async function AssistImage(question = '', size = '', model = '') {
 
     return data;
   } catch (err) {
-    console.error('error message', err);
+    _logger.error('error message', {err});
     throw err;
   }
 }
@@ -86,11 +86,11 @@ async function AssistMessage(question = '', history = [], instructions = '') {
   try {
     if (!assistant) {
       console.log('Creating assistant..');
-      assistant = await openAiClient.beta.assistants.retrieve(config.parsed.OPENAI_ASSISTANT_ID, {timeout: 6000});
+      assistant = await openAiClient.beta.assistants.retrieve(config.parsed?.OPENAI_ASSISTANT_ID, {timeout: 6000});
       console.log('Created assistant with id: ', assistant);
     }
 
-    const openAiThreadId = config.parsed.OPENAI_API_THREAD_ID;
+    const openAiThreadId = config.parsed?.OPENAI_API_THREAD_ID;
     if (!thread) {
       thread = await openAiClient.beta.threads.retrieve(openAiThreadId, {
         messages: [{

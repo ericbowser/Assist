@@ -1,39 +1,30 @@
 const { InferenceClient } = require('@huggingface/inference');
 const ImageModel = require('../helpers/Types');
 
-const client = new InferenceClient(process.env.HF_TOKEN);
+const HF_TOKEN = process.env.HF_TOKEN;
+if (!HF_TOKEN || (typeof HF_TOKEN === 'string' && !HF_TOKEN.startsWith('hf_'))) {
+  throw new Error('HF_TOKEN must be set in .env and be a valid Hugging Face token (see https://huggingface.co/settings/tokens)');
+}
+const client = new InferenceClient(HF_TOKEN);
 
-async function textToImage(inputs, parameters = { num_inference_steps: 8 }) {
-  const image = await client.textToImage({
+/**
+ * Single text-to-image API. Provider is always "auto".
+ * @param {string} inputs - Prompt text
+ * @param {object} parameters - e.g. { num_inference_steps, width, height }
+ * @param {string} model - Model id (use ImageModel.Flux, ImageModel.Flux2Turbo, ImageModel.Hunyan, etc.)
+ * @returns {Promise<Blob>} Generated image
+ */
+async function textToImage(inputs, parameters = {}, model) {
+  const x = new InferenceClient(HF_TOKEN, { model: model });
+  const image = await x.textToImage({
     provider: 'auto',
-    model: ImageModel.Flux,
-    outputType: 'url',
-    inputs,
-    parameters,
+    model: model || ImageModel.Hunyan,
+    inference_steps: 5,
+    width: parameters.width || 1280,
+    height: parameters.height || 1280,
+    inputs
   });
   return image;
 }
 
-async function textToImageFlux(inputs, parameters = { num_inference_steps: 10 }) {
-  const image = await client.textToImage({
-    provider: 'auto',
-    model: ImageModel.Flux,
-    outputType: 'url',
-    inputs,
-    parameters,
-  });
-  return image;
-}
-
-async function textToImageFlux2Turbo(inputs, parameters = { num_inference_steps: 8 }) {
-  const image = await client.textToImage({
-    provider: 'auto',
-    model: ImageModel.Flux2Turbo,
-    outputType: 'url',
-    inputs,
-    parameters,
-  });
-  return image;
-}
-
-module.exports = { textToImage, textToImageFlux, textToImageFlux2Turbo };
+module.exports = { textToImage, ImageModel };
