@@ -19,7 +19,7 @@ async function textToImage(inputs, parameters = {}, model) {
   const image = await x.textToImage({
     provider: 'auto',
     model: model || ImageModel.Hunyan,
-    inference_steps: 5,
+    inference_steps: parameters.num_inference_steps ?? parameters.inference_steps ?? 5,
     width: parameters.width || 1280,
     height: parameters.height || 1280,
     inputs

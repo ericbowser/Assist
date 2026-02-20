@@ -11,6 +11,7 @@ const { GenerateFromTextInput } = require('./client/geminiClient');
 const { textToImage: hfTextToImage, ImageModel } = require('./client/huggingFaceClient');
 const { validateChatRequest, formatChatResponse, handleChatError } = require('./middleware/chatMiddleware');
 const { upscaleIfNeeded } = require('./helpers/upscale');
+const { askOpenRouter } = require('./client/ai/openRouterApi');
 
 router.use(bodyParser.json());
 router.use(express.json());
@@ -100,6 +101,25 @@ router.post('/askChat', validateChatRequest, async (req, res) => {
   }
 });
 
+router.post('/askOpenRouter', validateChatRequest, async (req, res) => {
+  const { content, model } = req.body;
+  if (!content?.length) {
+    return res.status(400).json({ error: 'Missing or empty content' }).end();
+  }
+  const messages = content.map((m) => ({ role: m.role || 'user', content: typeof m.content === 'string' ? m.content : String(m.content) }));
+  _logger.info('askOpenRouter', { messageCount: messages.length, model });
+  try {
+    if (!process.env.OPENROUTER_API_KEY) {
+      return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured' }).end();
+    }
+    const result = await askOpenRouter(messages, model);
+    _logger.info('askOpenRouter response', { thread: result.thread });
+    return res.status(200).json(formatChatResponse(result.answer, result.thread)).end();
+  } catch (error) {
+    return handleChatError(error, res, _logger, 'askOpenRouter');
+  }
+});
+
 router.post('/askAssist', async (req, res) => {
   _logger.info('askAssist', { body: req.body });
   try {
@@ -159,7 +179,10 @@ router.post('/hfInferenceImage', async (req, res) => {
   const messages = Array.isArray(req.body) ? req.body : req.body?.content;
   const prompt = messages?.[0]?.content ?? req.body?.question ?? req.body?.prompt;
   const model = req.body?.model ?? ImageModel.Flux2Turbo;
-  const parameters = { num_inference_steps: 11, height: 1280, width: 1280, ...(req.body?.parameters ?? {}) };
+  const inferenceSteps = req.body?.inference_steps ?? req.body?.inferenceSteps ?? req.body?.parameters?.num_inference_steps;
+  const steps = inferenceSteps != null ? Math.min(50, Math.max(1, Number(inferenceSteps) || 5)) : 5;
+  const parameters = { num_inference_steps: steps, height: 1280, width: 1280, ...(req.body?.parameters ?? {}) };
+  parameters.num_inference_steps = steps;
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt (e.g. messages[0].content)' }).end();
   }
