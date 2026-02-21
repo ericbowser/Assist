@@ -12,6 +12,7 @@ const { textToImage: hfTextToImage, ImageModel } = require('./client/huggingFace
 const { validateChatRequest, formatChatResponse, handleChatError } = require('./middleware/chatMiddleware');
 const { upscaleIfNeeded } = require('./helpers/upscale');
 const { askOpenRouter } = require('./client/ai/openRouterApi');
+const { askLMStudio } = require('./client/lmStudioClient');
 
 router.use(bodyParser.json());
 router.use(express.json());
@@ -98,6 +99,28 @@ router.post('/askChat', validateChatRequest, async (req, res) => {
     return res.status(500).json({ error: 'No response' }).end();
   } catch (err) {
     return handleChatError(err, res, _logger, 'askChat');
+  }
+});
+
+router.post('/askLMStudio', validateChatRequest, async (req, res) => {
+  const { content, model, max_tokens, temperature } = req.body;
+  if (!content?.length) {
+    return res.status(400).json({ error: 'Missing or empty content' }).end();
+  }
+  const messages = content.map((m) => ({ role: m.role || 'user', content: typeof m.content === 'string' ? m.content : String(m.content) }));
+  _logger.info('askLMStudio', { messageCount: messages.length, model });
+  try {
+    const result = await askLMStudio(messages, { model, max_tokens, temperature });
+    _logger.info('askLMStudio response', { thread: result.thread });
+    return res.status(200).json(formatChatResponse(result.answer, result.thread)).end();
+  } catch (error) {
+    if (error.response?.status) {
+      return res.status(error.response.status).json({ error: error.response.data?.error?.message || error.response.statusText }).end();
+    }
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      return res.status(503).json({ error: 'LM Studio is not responding. Ensure it is running at ' + (process.env.LM_STUDIO_BASE_URL || 'http://10.0.0.3:6234') }).end();
+    }
+    return handleChatError(error, res, _logger, 'askLMStudio');
   }
 });
 
